@@ -1,0 +1,288 @@
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase'
+
+type Role = {
+  title: string
+  description: string
+  skills_needed: string[]
+}
+
+export default function ProjectForm() {
+  const router = useRouter()
+  const supabase = createClient()
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const [form, setForm] = useState({
+    title: '',
+    description: '',
+    why_it_matters: '',
+    commitment_hours_pw: '',
+    commitment_role: '',
+    commitment_description: '',
+  })
+
+  const [roles, setRoles] = useState<Role[]>([
+    { title: '', description: '', skills_needed: [] },
+  ])
+
+  function updateForm(field: string, value: string) {
+    setForm(prev => ({ ...prev, [field]: value }))
+  }
+
+  function updateRole(index: number, field: string, value: string) {
+    setRoles(prev =>
+      prev.map((role, i) =>
+        i === index ? { ...role, [field]: value } : role
+      )
+    )
+  }
+
+  function updateRoleSkills(index: number, value: string) {
+    const skills = value.split(',').map(s => s.trim()).filter(Boolean)
+    setRoles(prev =>
+      prev.map((role, i) =>
+        i === index ? { ...role, skills_needed: skills } : role
+      )
+    )
+  }
+
+  function addRole() {
+    setRoles(prev => [...prev, { title: '', description: '', skills_needed: [] }])
+  }
+
+  function removeRole(index: number) {
+    setRoles(prev => prev.filter((_, i) => i !== index))
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      router.push('/login')
+      return
+    }
+
+    // Create the project
+    const { data: project, error: projectError } = await supabase
+      .from('projects')
+      .insert({
+        owner_id: user.id,
+        title: form.title,
+        description: form.description,
+        why_it_matters: form.why_it_matters,
+        commitment_hours_pw: parseInt(form.commitment_hours_pw),
+        commitment_role: form.commitment_role,
+        commitment_description: form.commitment_description,
+        status: 'active',
+      })
+      .select()
+      .single()
+
+    if (projectError) {
+      setError(projectError.message)
+      setLoading(false)
+      return
+    }
+
+    // Create the roles
+    const rolesWithProject = roles
+      .filter(r => r.title.trim())
+      .map(r => ({ ...r, project_id: project.id }))
+
+    if (rolesWithProject.length > 0) {
+      const { error: rolesError } = await supabase
+        .from('roles')
+        .insert(rolesWithProject)
+
+      if (rolesError) {
+        setError(rolesError.message)
+        setLoading(false)
+        return
+      }
+    }
+
+    router.push(`/projects/${project.id}`)
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="max-w-2xl mx-auto py-12 px-4 space-y-10">
+      <div>
+        <h1 className="text-3xl font-semibold text-gray-900">Post your idea</h1>
+        <p className="text-gray-500 mt-2">Tell people what you're building and what you're putting in.</p>
+      </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          {error}
+        </div>
+      )}
+
+      {/* The idea */}
+      <section className="space-y-4">
+        <h2 className="text-lg font-medium text-gray-900 border-b border-gray-100 pb-2">
+          The idea
+        </h2>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Title <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            required
+            placeholder="e.g. A platform for local food producers to sell directly"
+            value={form.title}
+            onChange={e => updateForm('title', e.target.value)}
+            className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Description <span className="text-red-500">*</span>
+          </label>
+          <textarea
+            required
+            rows={4}
+            placeholder="What is this project? How does it work?"
+            value={form.description}
+            onChange={e => updateForm('description', e.target.value)}
+            className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Why does this matter?
+          </label>
+          <textarea
+            rows={3}
+            placeholder="What problem does this solve? Who benefits?"
+            value={form.why_it_matters}
+            onChange={e => updateForm('why_it_matters', e.target.value)}
+            className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900"
+          />
+        </div>
+      </section>
+
+      {/* Commitment signal */}
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-lg font-medium text-gray-900 border-b border-gray-100 pb-2">
+            Your commitment
+          </h2>
+          <p className="text-sm text-gray-500 mt-2">
+            This is the most important part. Show people you are serious.
+          </p>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Hours per week <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="number"
+            required
+            min={1}
+            max={80}
+            placeholder="e.g. 10"
+            value={form.commitment_hours_pw}
+            onChange={e => updateForm('commitment_hours_pw', e.target.value)}
+            className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Your role in this project <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            required
+            placeholder="e.g. Backend developer, Product designer, Business lead"
+            value={form.commitment_role}
+            onChange={e => updateForm('commitment_role', e.target.value)}
+            className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            What you are bringing
+          </label>
+          <textarea
+            rows={3}
+            placeholder="e.g. I will handle all backend architecture, database design and API development"
+            value={form.commitment_description}
+            onChange={e => updateForm('commitment_description', e.target.value)}
+            className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900"
+          />
+        </div>
+      </section>
+
+      {/* Roles needed */}
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-lg font-medium text-gray-900 border-b border-gray-100 pb-2">
+            Roles needed
+          </h2>
+          <p className="text-sm text-gray-500 mt-2">
+            Who do you need to build this?
+          </p>
+        </div>
+        {roles.map((role, index) => (
+          <div key={index} className="border border-gray-200 rounded-lg p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-700">Role {index + 1}</span>
+              {roles.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => removeRole(index)}
+                  className="text-sm text-red-500 hover:text-red-700"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+            <input
+              type="text"
+              placeholder="e.g. Frontend developer"
+              value={role.title}
+              onChange={e => updateRole(index, 'title', e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900"
+            />
+            <input
+              type="text"
+              placeholder="Skills needed (comma separated): e.g. React, TypeScript, CSS"
+              onChange={e => updateRoleSkills(index, e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900"
+            />
+            <textarea
+              rows={2}
+              placeholder="What will this person work on?"
+              value={role.description}
+              onChange={e => updateRole(index, 'description', e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900"
+            />
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={addRole}
+          className="text-sm text-gray-600 border border-gray-200 rounded-lg px-4 py-2 hover:bg-gray-50 transition-colors"
+        >
+          + Add another role
+        </button>
+      </section>
+
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full bg-gray-900 text-white py-3 rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
+      >
+        {loading ? 'Posting...' : 'Post your idea'}
+      </button>
+    </form>
+  )
+}
