@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 
 type Role = {
@@ -148,7 +149,7 @@ export default function ProjectForm() {
           </label>
           <textarea
             required
-            rows={4}
+            rows={6}
             placeholder="What is this project? How does it work?"
             value={form.description}
             onChange={e => updateForm('description', e.target.value)}
@@ -160,7 +161,7 @@ export default function ProjectForm() {
             Why does this matter?
           </label>
           <textarea
-            rows={3}
+            rows={4}
             placeholder="What problem does this solve? Who benefits?"
             value={form.why_it_matters}
             onChange={e => updateForm('why_it_matters', e.target.value)}
@@ -212,7 +213,7 @@ export default function ProjectForm() {
             What you are bringing
           </label>
           <textarea
-            rows={3}
+            rows={4}
             placeholder="e.g. I will handle all backend architecture, database design and API development"
             value={form.commitment_description}
             onChange={e => updateForm('commitment_description', e.target.value)}
@@ -276,13 +277,21 @@ export default function ProjectForm() {
         </button>
       </section>
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full bg-gray-900 text-white py-3 rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
-      >
-        {loading ? 'Posting...' : 'Post your idea'}
-      </button>
+      <div className="flex gap-3">
+        <button
+          type="submit"
+          disabled={loading}
+          className="flex-1 bg-gray-900 text-white py-3 rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
+        >
+          {loading ? 'Posting...' : 'Post your idea'}
+        </button>
+        <Link
+          href="/projects"
+          className="px-6 py-3 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors text-center"
+        >
+          Cancel
+        </Link>
+      </div>
     </form>
   )
 }
