@@ -1,6 +1,11 @@
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase-server'
+import SignOutButton from '@/components/SignOutButton'
 
-export default function HomePage() {
+export default async function HomePage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="text-center max-w-2xl px-4">
@@ -17,13 +22,30 @@ export default function HomePage() {
           >
             Browse ideas
           </Link>
-          <Link
-            href="/login"
-            className="border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            Sign in
-          </Link>
+          {user ? (
+            <>
+              <Link
+                href="/projects/new"
+                className="border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Post an idea
+              </Link>
+              <SignOutButton />
+            </>
+          ) : (
+            <Link
+              href="/login"
+              className="border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Sign in
+            </Link>
+          )}
         </div>
+        {user && (
+          <p className="mt-6 text-sm text-gray-400">
+            Signed in as {user.email}
+          </p>
+        )}
       </div>
     </div>
   )
