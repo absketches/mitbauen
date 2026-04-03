@@ -1,3 +1,4 @@
+// @vitest-environment node
 /**
  * Integration tests for the comment flow.
  * Verifies comments are actually persisted and that auth/empty-body guards hold.

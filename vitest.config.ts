@@ -8,10 +8,6 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
-    environmentMatchGlobs: [
-      ['__tests__/actions/**', 'node'],
-      ['__tests__/proxy.test.ts', 'node'],
-    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json-summary', 'html'],
