@@ -16,6 +16,36 @@ export default function ProjectForm() {
   const supabase = createClient()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+
+  function validate() {
+    const errors: Record<string, string> = {}
+
+    if (form.title.trim().length < 5)
+      errors.title = 'Title must be at least 5 characters.'
+    if (form.title.trim().length > 120)
+      errors.title = 'Title must be 120 characters or fewer.'
+
+    if (form.description.trim().length < 30)
+      errors.description = 'Description must be at least 30 characters.'
+
+    if (form.commitment_role.trim().length < 3)
+      errors.commitment_role = 'Role must be at least 3 characters.'
+    if (form.commitment_role.trim().length > 80)
+      errors.commitment_role = 'Role must be 80 characters or fewer.'
+
+    roles.forEach((role, i) => {
+      if (!role.title.trim()) {
+        errors[`role_${i}_title`] = 'Role title is required.'
+      } else if (role.title.trim().length < 3) {
+        errors[`role_${i}_title`] = 'Role title must be at least 3 characters.'
+      } else if (role.title.trim().length > 80) {
+        errors[`role_${i}_title`] = 'Role title must be 80 characters or fewer.'
+      }
+    })
+
+    return errors
+  }
 
   const [form, setForm] = useState({
     title: '',
@@ -61,8 +91,15 @@ export default function ProjectForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setLoading(true)
     setError(null)
+
+    const errors = validate()
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors)
+      return
+    }
+    setFieldErrors({})
+    setLoading(true)
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
@@ -140,8 +177,9 @@ export default function ProjectForm() {
             placeholder="e.g. A platform for local food producers to sell directly"
             value={form.title}
             onChange={e => updateForm('title', e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900"
+            className={`w-full border rounded-lg px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 ${fieldErrors.title ? 'border-red-400' : 'border-gray-200'}`}
           />
+          {fieldErrors.title && <p className="text-xs text-red-500 mt-1">{fieldErrors.title}</p>}
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -153,8 +191,9 @@ export default function ProjectForm() {
             placeholder="What is this project? How does it work?"
             value={form.description}
             onChange={e => updateForm('description', e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900"
+            className={`w-full border rounded-lg px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 ${fieldErrors.description ? 'border-red-400' : 'border-gray-200'}`}
           />
+          {fieldErrors.description && <p className="text-xs text-red-500 mt-1">{fieldErrors.description}</p>}
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -205,8 +244,9 @@ export default function ProjectForm() {
             placeholder="e.g. Backend developer, Product designer, Business lead"
             value={form.commitment_role}
             onChange={e => updateForm('commitment_role', e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900"
+            className={`w-full border rounded-lg px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 ${fieldErrors.commitment_role ? 'border-red-400' : 'border-gray-200'}`}
           />
+          {fieldErrors.commitment_role && <p className="text-xs text-red-500 mt-1">{fieldErrors.commitment_role}</p>}
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -251,8 +291,9 @@ export default function ProjectForm() {
               placeholder="e.g. Frontend developer"
               value={role.title}
               onChange={e => updateRole(index, 'title', e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900"
+              className={`w-full border rounded-lg px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 ${fieldErrors[`role_${index}_title`] ? 'border-red-400' : 'border-gray-200'}`}
             />
+            {fieldErrors[`role_${index}_title`] && <p className="text-xs text-red-500 mt-1">{fieldErrors[`role_${index}_title`]}</p>}
             <input
               type="text"
               placeholder="Skills needed (comma separated): e.g. React, TypeScript, CSS"

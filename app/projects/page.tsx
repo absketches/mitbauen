@@ -13,10 +13,10 @@ export default async function ProjectsPage() {
       votes (id)
     `)
     .eq('status', 'active')
-    .order('created_at', { ascending: false })
+    .order('created_at', { ascending: true })
 
   return (
-    <div className="max-w-3xl mx-auto py-12 px-4">
+    <div className="max-w-6xl mx-auto py-12 px-4">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-semibold text-gray-900">Ideas</h1>
@@ -35,7 +35,7 @@ export default async function ProjectsPage() {
           No ideas yet. Be the first to post one.
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {projects.map((project: any) => {
             const openRoles = project.roles?.filter((r: any) => r.status === 'open') ?? []
             const voteCount = project.votes?.length ?? 0
@@ -44,17 +44,13 @@ export default async function ProjectsPage() {
               <Link
                 key={project.id}
                 href={`/projects/${project.id}`}
-                className="block border border-gray-200 rounded-xl p-6 hover:border-gray-400 transition-colors bg-white"
+                className="flex flex-col border border-gray-200 rounded-xl p-5 hover:border-gray-400 hover:shadow-sm transition-all bg-white"
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <h2 className="text-lg font-medium text-gray-900 truncate">
-                      {project.title}
-                    </h2>
-                    <p className="text-gray-500 text-sm mt-1 line-clamp-2">
-                      {project.description}
-                    </p>
-                  </div>
+                {/* Title + votes */}
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <h2 className="text-base font-medium text-gray-900 line-clamp-2 flex-1">
+                    {project.title}
+                  </h2>
                   <div className="flex items-center gap-1 text-gray-400 text-sm shrink-0">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
@@ -63,24 +59,25 @@ export default async function ProjectsPage() {
                   </div>
                 </div>
 
+                {/* Description */}
+                <p className="text-gray-500 text-sm line-clamp-3 flex-1 mb-4">
+                  {project.description}
+                </p>
+
                 {/* Commitment badge */}
-                <div className="mt-4 inline-flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 text-sm">
-                  <span className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
-                  <span className="text-gray-700">
-                    Founder commits <strong>{project.commitment_hours_pw}h/week</strong> as <strong>{project.commitment_role}</strong>
+                <div className="inline-flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-lg px-3 py-1.5 text-xs mb-4">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
+                  <span className="text-gray-600 truncate">
+                    <strong>{project.commitment_hours_pw}h/wk</strong> · <strong>{project.commitment_role}</strong>
                   </span>
                 </div>
 
-                {/* Roles and meta */}
-                <div className="mt-4 flex items-center gap-4 text-sm text-gray-500">
+                {/* Footer */}
+                <div className="flex items-center justify-between text-xs text-gray-400 pt-3 border-t border-gray-100">
+                  <span>by {project.users?.name ?? 'Anonymous'}</span>
                   {openRoles.length > 0 && (
-                    <span>
-                      {openRoles.length} open {openRoles.length === 1 ? 'role' : 'roles'}
-                    </span>
+                    <span>{openRoles.length} open {openRoles.length === 1 ? 'role' : 'roles'}</span>
                   )}
-                  <span className="flex items-center gap-1">
-                    by {project.users?.name ?? 'Anonymous'}
-                  </span>
                 </div>
               </Link>
             )

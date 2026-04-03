@@ -10,6 +10,13 @@ export default function LoginPage() {
       provider: 'github',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
+        queryParams: {
+          // Force GitHub to show the login screen every time.
+          // Without this, GitHub reuses its own browser session and silently
+          // re-authorizes the last account — making it impossible to switch
+          // between GitHub accounts.
+          prompt: 'login',
+        },
       },
     })
   }
