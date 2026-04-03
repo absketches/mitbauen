@@ -35,19 +35,25 @@ jobs:
 
       - name: Post coverage summary to job
         run: |
-          echo "## Coverage summary" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
           node -e "
             const fs = require('fs');
             const data = JSON.parse(fs.readFileSync('coverage/coverage-summary.json', 'utf8'));
             const t = data.total;
-            const pct = k => t[k].pct.toFixed(1) + '%';
-            console.log('Statements : ' + pct('statements'));
-            console.log('Branches   : ' + pct('branches'));
-            console.log('Functions  : ' + pct('functions'));
-            console.log('Lines      : ' + pct('lines'));
-          " >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
+            const pct = k => t[k].pct.toFixed(1);
+            const overall = ((t.statements.pct + t.branches.pct + t.functions.pct + t.lines.pct) / 4).toFixed(1);
+            const icon = p => parseFloat(p) >= 80 ? '✅' : parseFloat(p) >= 60 ? '⚠️' : '❌';
+            const lines = [
+              '## ' + icon(overall) + ' Overall coverage: ' + overall + '%',
+              '',
+              '| Metric | Coverage |',
+              '|--------|----------|',
+              '| Statements | ' + pct('statements') + '% |',
+              '| Branches   | ' + pct('branches') + '% |',
+              '| Functions  | ' + pct('functions') + '% |',
+              '| Lines      | ' + pct('lines') + '% |',
+            ];
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n') + '\n');
+          "
 
       - name: Comment coverage on PR
         if: github.event_name == 'pull_request'
@@ -65,8 +71,9 @@ jobs:
             const fn = pct('functions');
             const line = pct('lines');
 
+            const overall = ((t.statements.pct + t.branches.pct + t.functions.pct + t.lines.pct) / 4).toFixed(1) + '%';
             const body = [
-              '## 📊 Coverage report',
+              `## 📊 Coverage report — ${icon(overall)} ${overall} overall`,
               '',
               '| Metric | Coverage |',
               '|--------|----------|',
