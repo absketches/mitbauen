@@ -41,9 +41,8 @@ jobs:
             const t = data.total;
             const pct = k => t[k].pct.toFixed(1);
             const overall = ((t.statements.pct + t.branches.pct + t.functions.pct + t.lines.pct) / 4).toFixed(1);
-            const icon = p => parseFloat(p) >= 80 ? '✅' : parseFloat(p) >= 60 ? '⚠️' : '❌';
             const lines = [
-              '## ' + icon(overall) + ' Overall coverage: ' + overall + '%',
+              '## Overall coverage: ' + overall + '%',
               '',
               '| Metric | Coverage |',
               '|--------|----------|',
@@ -64,23 +63,20 @@ jobs:
             const summary = JSON.parse(fs.readFileSync('coverage/coverage-summary.json', 'utf8'));
             const t = summary.total;
             const pct = k => t[k].pct.toFixed(1) + '%';
-            const icon = p => parseFloat(p) >= 80 ? '✅' : parseFloat(p) >= 60 ? '⚠️' : '❌';
-
             const stmt = pct('statements');
             const branch = pct('branches');
             const fn = pct('functions');
             const line = pct('lines');
-
             const overall = ((t.statements.pct + t.branches.pct + t.functions.pct + t.lines.pct) / 4).toFixed(1) + '%';
             const body = [
-              `## 📊 Coverage report — ${icon(overall)} ${overall} overall`,
+              `## Coverage report — ${overall} overall`,
               '',
               '| Metric | Coverage |',
               '|--------|----------|',
-              `| Statements | ${icon(stmt)} ${stmt} |`,
-              `| Branches   | ${icon(branch)} ${branch} |`,
-              `| Functions  | ${icon(fn)} ${fn} |`,
-              `| Lines      | ${icon(line)} ${line} |`,
+              `| Statements | ${stmt} |`,
+              `| Branches   | ${branch} |`,
+              `| Functions  | ${fn} |`,
+              `| Lines      | ${line} |`,
             ].join('\n');
 
             const { data: comments } = await github.rest.issues.listComments({
