@@ -38,11 +38,15 @@ export default async function ProjectsPage() {
             const voteCount = project.votes?.length ?? 0
 
             return (
-              <Link
+              // Stretched-link pattern: card is a relative div; the main Link covers it
+              // absolutely; the owner name Link sits above via relative z-10
+              <div
                 key={project.id}
-                href={`/projects/${project.id}`}
-                className="group flex min-h-[clamp(18.5rem,38vw,21rem)] flex-col rounded-[1.9rem] border border-black/10 bg-white/92 p-5 shadow-[0_18px_60px_rgba(0,0,0,0.05)] transition-all hover:-translate-y-1 hover:border-black/18 hover:shadow-[0_30px_90px_rgba(0,0,0,0.1)] sm:p-6"
+                className="group relative flex min-h-[clamp(18.5rem,38vw,21rem)] flex-col rounded-[1.9rem] border border-black/10 bg-white/92 p-5 shadow-[0_18px_60px_rgba(0,0,0,0.05)] transition-all hover:-translate-y-1 hover:border-black/18 hover:shadow-[0_30px_90px_rgba(0,0,0,0.1)] sm:p-6"
               >
+                {/* Main card link — stretched to fill the entire card */}
+                <Link href={`/projects/${project.id}`} className="absolute inset-0 rounded-[1.9rem]" aria-label={project.title} />
+
                 <div className="mb-5 flex items-start justify-between gap-4">
                   <div className="inline-flex items-center rounded-full border border-black/10 bg-black/[0.03] px-3 py-1 text-[0.68rem] font-medium uppercase tracking-[0.24em] text-black/45">
                     Founder-led
@@ -72,14 +76,27 @@ export default async function ProjectsPage() {
                 </div>
 
                 <div className="flex flex-wrap items-center justify-between gap-3 border-t border-black/8 pt-4 text-xs text-black/46">
-                  <span className="truncate">by {project.users?.name ?? 'Anonymous'}</span>
-                  {openRoles.length > 0 && (
-                    <span className="rounded-full border border-black/10 px-3 py-1">
-                      {openRoles.length} open {openRoles.length === 1 ? 'role' : 'roles'}
-                    </span>
-                  )}
+                  <span className="truncate">
+                    by{' '}
+                    {/* relative z-10 so this link sits above the stretched card link */}
+                    <Link href={`/profile/${project.owner_id}`} className="relative z-10 hover:underline">
+                      {project.users?.name ?? 'Anonymous'}
+                    </Link>
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {project.application_count > 0 && (
+                      <span className="rounded-full border border-black/10 px-3 py-1">
+                        {project.application_count} {project.application_count === 1 ? 'applicant' : 'applicants'}
+                      </span>
+                    )}
+                    {openRoles.length > 0 && (
+                      <span className="rounded-full border border-black/10 px-3 py-1">
+                        {openRoles.length} open {openRoles.length === 1 ? 'role' : 'roles'}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </Link>
+              </div>
             )
           })}
         </div>

@@ -19,10 +19,12 @@ export type ProjectRoleSummary = {
 
 export type ProjectVote = {
   id: string
+  user_id: string
 }
 
 export type ProjectFeedItem = {
   id: string
+  owner_id: string
   title: string
   description: string | null
   commitment_hours_pw: number | null
@@ -31,6 +33,7 @@ export type ProjectFeedItem = {
   users: ProjectUser | null
   roles: ProjectRoleSummary[]
   votes: ProjectVote[]
+  application_count: number
 }
 
 export type ProjectRole = {
@@ -45,6 +48,7 @@ export type ProjectComment = {
   id: string
   body: string
   created_at: string
+  user_id: string
   users: ProjectUser | null
 }
 
@@ -72,6 +76,7 @@ type JoinedUser =
 
 type ProjectFeedRow = {
   id: string
+  owner_id: string
   title: string
   description: string | null
   commitment_hours_pw: number | null
@@ -86,6 +91,7 @@ type ProjectCommentRow = {
   id: string
   body: string
   created_at: string
+  user_id: string
   users: JoinedUser
 }
 
@@ -104,17 +110,34 @@ export async function getProjectFeed(): Promise<ProjectFeedItem[]> {
   const { data, error } = await supabase
     .from('projects')
     .select(`
-      id, title, description, commitment_hours_pw, commitment_role, created_at,
+      id, owner_id, title, description, commitment_hours_pw, commitment_role, created_at,
       users!owner_id (name, avatar_url),
       roles (id, status),
-      votes (id)
+      votes (id, user_id)
     `)
     .eq('status', 'active')
     .order('created_at', { ascending: true })
   if (error) console.error('[getProjectFeed]', error.message)
-  return ((data ?? []) as ProjectFeedRow[]).map(project => ({
+
+  const projects = (data ?? []) as ProjectFeedRow[]
+
+  // Flat second query to count applications per role (avoids 3-level nesting under RLS)
+  const allRoleIds = projects.flatMap(p => p.roles.map(r => r.id))
+  const appCountByRole: Record<string, number> = {}
+  if (allRoleIds.length > 0) {
+    const { data: appRows } = await supabase
+      .from('applications')
+      .select('role_id')
+      .in('role_id', allRoleIds)
+    for (const row of (appRows ?? [])) {
+      appCountByRole[row.role_id] = (appCountByRole[row.role_id] ?? 0) + 1
+    }
+  }
+
+  return projects.map(project => ({
     ...project,
     users: extractJoinedUser(project.users),
+    application_count: project.roles.reduce((sum, r) => sum + (appCountByRole[r.id] ?? 0), 0),
   }))
 }
 
@@ -126,8 +149,8 @@ export async function getProjectById(id: string): Promise<ProjectDetails | null>
       *,
       users!owner_id (name, avatar_url),
       roles (id, title, description, skills_needed, status),
-      votes (id),
-      comments (id, body, created_at, users!user_id (name, avatar_url))
+      votes (id, user_id),
+      comments (id, body, created_at, user_id, users!user_id (name, avatar_url))
     `)
     .eq('id', id)
     .single()

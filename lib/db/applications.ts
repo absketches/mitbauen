@@ -31,6 +31,7 @@ export type UserRoleApplication = {
 
 export type RoleApplication = {
   id: string
+  applicant_id: string
   message: string
   what_i_bring: string
   status: 'pending' | 'accepted' | 'rejected'
@@ -55,6 +56,7 @@ type ProjectWithOwnerRow = {
 }
 type RoleApplicationRow = {
   id: string
+  applicant_id: string
   message: string
   what_i_bring: string
   status: 'pending' | 'accepted' | 'rejected'
@@ -157,7 +159,7 @@ export async function getApplicationsForRoles(roleIds: string[]): Promise<RoleAp
   const supabase = await createClient()
   const { data } = await supabase
     .from('applications')
-    .select('id, message, what_i_bring, status, role_id, users!applicant_id (name, avatar_url)')
+    .select('id, applicant_id, message, what_i_bring, status, role_id, users!applicant_id (name, avatar_url)')
     .in('role_id', roleIds)
     .order('created_at', { ascending: true })
   return ((data ?? []) as RoleApplicationRow[]).map(application => ({

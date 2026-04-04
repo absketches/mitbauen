@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { respondToApplication } from '@/app/actions/applications'
 import ApplicationThread from './ApplicationThread'
 import AvatarImage from '@/components/AvatarImage'
@@ -15,6 +16,7 @@ type Message = {
 
 type Application = {
   id: string
+  applicant_id: string
   message: string
   what_i_bring: string
   status: 'pending' | 'accepted' | 'rejected'
@@ -71,9 +73,9 @@ function ApplicationCard({
             <p className="text-[0.68rem] font-medium uppercase tracking-[0.26em] text-black/35">
               Applicant
             </p>
-            <p className="truncate text-base font-semibold tracking-[-0.02em] text-black">
+            <Link href={`/profile/${app.applicant_id}`} className="truncate text-base font-semibold tracking-[-0.02em] text-black hover:underline">
               {app.users?.name ?? 'Anonymous'}
-            </p>
+            </Link>
           </div>
         </div>
 

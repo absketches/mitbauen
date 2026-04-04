@@ -33,10 +33,13 @@ export async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  const protectedRoutes = ['/projects/new', '/profile', '/messages']
-  const isProtected = protectedRoutes.some(route =>
-    request.nextUrl.pathname.startsWith(route)
-  )
+  const pathname = request.nextUrl.pathname
+  // /profile exactly is the own-profile page (auth required)
+  // /profile/[id] is a public page — no auth required
+  const isProtected =
+    pathname === '/profile' ||
+    pathname.startsWith('/projects/new') ||
+    pathname.startsWith('/messages')
 
   // Redirect unauthenticated users away from protected routes
   if (isProtected && !user) {

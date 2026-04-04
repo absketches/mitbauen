@@ -1,23 +1,30 @@
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase-server'
 import AvatarImage from '@/components/AvatarImage'
-import ProfileEditForm from '@/components/profile/ProfileEditForm'
 import { getUserProfile, getProjectsByOwner } from '@/lib/db/users'
 
-export default async function ProfilePage() {
+export default async function PublicProfilePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
 
-  const [profile, projects] = await Promise.all([
-    getUserProfile(user.id),
-    getProjectsByOwner(user.id),
+  const [profile, projects, { data: { user } }] = await Promise.all([
+    getUserProfile(id),
+    getProjectsByOwner(id),
+    supabase.auth.getUser(),
   ])
 
-  const initials = profile?.name
+  if (!profile) notFound()
+
+  // Redirect to own profile page if viewing yourself
+  if (user?.id === id) {
+    const { redirect } = await import('next/navigation')
+    redirect('/profile')
+  }
+
+  const initials = profile.name
     ? profile.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-    : user.email?.[0]?.toUpperCase() ?? '?'
+    : '?'
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-[clamp(2.75rem,7vw,4.5rem)] sm:px-6">
@@ -31,34 +38,50 @@ export default async function ProfilePage() {
       {/* Header */}
       <div className="mb-8 flex items-center gap-5">
         <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-black/10 bg-black/[0.06] text-lg font-semibold text-black/58">
-          {profile?.avatar_url
-            ? <AvatarImage src={profile.avatar_url} alt={profile.name ?? 'You'} size={64} className="h-full w-full object-cover" />
+          {profile.avatar_url
+            ? <AvatarImage src={profile.avatar_url} alt={profile.name ?? 'User'} size={64} className="h-full w-full object-cover" />
             : initials
           }
         </div>
         <div>
           <h1 className="text-2xl font-semibold tracking-[-0.03em] text-black">
-            {profile?.name ?? 'Your profile'}
+            {profile.name ?? 'Anonymous'}
           </h1>
-          <p className="mt-0.5 text-sm text-black/45">{user.email}</p>
         </div>
       </div>
 
-      {/* Bio + Skills (editable) */}
-      <div className="mb-8 rounded-[2rem] border border-black/10 bg-white/92 p-6 shadow-[0_18px_60px_rgba(0,0,0,0.05)]">
-        <ProfileEditForm bio={profile?.bio ?? null} skills={profile?.skills ?? null} />
+      {/* Bio + Skills (view-only) */}
+      <div className="mb-8 rounded-[2rem] border border-black/10 bg-white/92 p-6 shadow-[0_18px_60px_rgba(0,0,0,0.05)] space-y-6">
+        <div>
+          <p className="text-[0.68rem] font-medium uppercase tracking-[0.26em] text-black/38">Bio</p>
+          <p className="mt-2 text-sm leading-7 text-black/65">
+            {profile.bio?.trim() || <span className="italic text-black/32">No bio yet.</span>}
+          </p>
+        </div>
+
+        <div>
+          <p className="text-[0.68rem] font-medium uppercase tracking-[0.26em] text-black/38">Skills</p>
+          {profile.skills?.length ? (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {profile.skills.map(skill => (
+                <span key={skill} className="rounded-full border border-black/10 bg-black/[0.03] px-3 py-1 text-xs font-medium text-black/62">
+                  {skill}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-2 text-sm italic text-black/32">No skills listed.</p>
+          )}
+        </div>
       </div>
 
-      {/* Your projects */}
+      {/* Their projects */}
       <div className="rounded-[2rem] border border-black/10 bg-white/92 p-6 shadow-[0_18px_60px_rgba(0,0,0,0.05)]">
         <p className="text-[0.72rem] font-medium uppercase tracking-[0.34em] text-black/42">
-          Your Projects
+          Projects
         </p>
         {projects.length === 0 ? (
-          <div className="mt-4 rounded-[1.5rem] border border-dashed border-black/12 bg-black/[0.02] px-5 py-8 text-center text-sm text-black/42">
-            You haven&apos;t posted any ideas yet.{' '}
-            <Link href="/projects/new" className="underline hover:text-black">Post one now.</Link>
-          </div>
+          <p className="mt-4 text-sm italic text-black/32">No active projects.</p>
         ) : (
           <ul className="mt-4 space-y-2">
             {projects.map(project => (

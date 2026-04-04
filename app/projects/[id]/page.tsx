@@ -24,6 +24,7 @@ import ApplyModal from '@/components/projects/ApplyModal'
 import ApplicationsPanel from '@/components/projects/ApplicationsPanel'
 import ApplicationThread from '@/components/projects/ApplicationThread'
 import MarkCommentsRead from '@/components/projects/MarkCommentsRead'
+import VoteButton from '@/components/projects/VoteButton'
 
 export default async function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -86,6 +87,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
   const appliedRoleIds = new Set(myApplications.map(application => application.role_id))
   const openRoles = project.roles.filter((role: ProjectRole) => role.status === 'open')
   const voteCount = project.votes?.length ?? 0
+  const hasVoted = !!user && project.votes.some(v => v.user_id === user.id)
   const comments = [...project.comments].sort(
     (a: ProjectComment, b: ProjectComment) =>
       new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
@@ -106,14 +108,19 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
             {project.title}
           </h1>
           <div className="mt-5 flex flex-wrap items-center gap-3 text-sm text-black/52">
-            <span>by {project.users?.name ?? 'Anonymous'}</span>
-            <span className="h-1 w-1 rounded-full bg-black/20" />
-            <span className="inline-flex items-center gap-1 rounded-full border border-black/10 px-3 py-1">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-              </svg>
-              {voteCount} {voteCount === 1 ? 'vote' : 'votes'}
+            <span>
+              by{' '}
+              <Link href={`/profile/${project.owner_id}`} className="hover:underline">
+                {project.users?.name ?? 'Anonymous'}
+              </Link>
             </span>
+            <span className="h-1 w-1 rounded-full bg-black/20" />
+            <VoteButton
+              projectId={project.id}
+              initialCount={voteCount}
+              initialHasVoted={hasVoted}
+              isAuthenticated={!!user}
+            />
             <span className="inline-flex items-center gap-1 rounded-full border border-black/10 px-3 py-1">
               {openRoles.length} open {openRoles.length === 1 ? 'role' : 'roles'}
             </span>
@@ -165,11 +172,13 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
             <div className="mt-5 grid grid-cols-2 gap-3">
               <div className="rounded-[1.25rem] border border-black/8 bg-black/[0.03] p-4">
                 <p className="text-[0.66rem] uppercase tracking-[0.26em] text-black/38">Owner</p>
-                <p className="mt-2 text-sm font-medium text-black">{project.users?.name ?? 'Anonymous'}</p>
+                <Link href={`/profile/${project.owner_id}`} className="mt-2 block text-sm font-medium text-black hover:underline">
+                  {project.users?.name ?? 'Anonymous'}
+                </Link>
               </div>
               <div className="rounded-[1.25rem] border border-black/8 bg-black/[0.03] p-4">
                 <p className="text-[0.66rem] uppercase tracking-[0.26em] text-black/38">Interest</p>
-                <p className="mt-2 text-sm font-medium text-black">{voteCount} {voteCount === 1 ? 'vote' : 'votes'}</p>
+                <p className="mt-2 text-sm font-medium text-black">{voteCount} {voteCount === 1 ? 'upvote' : 'upvotes'}</p>
               </div>
             </div>
           </div>
@@ -287,7 +296,9 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                 </div>
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-medium text-black">{comment.users?.name ?? 'Anonymous'}</span>
+                    <Link href={`/profile/${comment.user_id}`} className="text-sm font-medium text-black hover:underline">
+                      {comment.users?.name ?? 'Anonymous'}
+                    </Link>
                     <span className="text-xs text-black/35">
                       {new Date(comment.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </span>
