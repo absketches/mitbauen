@@ -145,7 +145,7 @@ class QueryBuilder<T extends TableName> {
   }
 
   private getRows(): TableRowMap[T][] {
-    return this.db.tables[this.tableName]
+    return this.db.tables[this.tableName] as TableRowMap[T][]
   }
 
   private applyFilters(rows: TableRowMap[T][]): TableRowMap[T][] {
