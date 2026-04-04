@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase-server'
 
 type RoleInput = {
@@ -133,7 +134,7 @@ export async function updateProject(
 
 export async function deleteProject(
   projectId: string
-): Promise<{ error: string } | { success: true }> {
+): Promise<{ error: string }> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Not authenticated.' }
@@ -154,6 +155,8 @@ export async function deleteProject(
 
   if (error) return { error: error.message }
 
+  // redirect() throws internally and is handled by Next.js — the edit page
+  // is never re-rendered, so getProjectById is not called on the deleted project.
   revalidatePath('/projects')
-  return { success: true }
+  redirect('/projects')
 }

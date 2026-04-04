@@ -172,9 +172,10 @@ describe('deleteProject', () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
     const chain = makeOwnershipChain('user-1')
     mockFrom.mockReturnValue(chain)
-    const result = await deleteProject('project-1')
+    // deleteProject calls redirect() on success which throws internally;
+    // we just verify delete was called and path was revalidated
+    await expect(deleteProject('project-1')).rejects.toThrow()
     expect(chain.delete).toHaveBeenCalled()
     expect(mockRevalidatePath).toHaveBeenCalledWith('/projects')
-    expect(result).toEqual({ success: true })
   })
 })

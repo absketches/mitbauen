@@ -32,7 +32,7 @@ mitbauen/
 │   │   ├── applications.ts      # applyToRole, respondToApplication
 │   │   ├── comments.ts          # addComment, markCommentsRead
 │   │   ├── messages.ts          # sendMessage, markThreadRead
-│   │   ├── projects.ts          # createProject (calls create_project_with_roles RPC)
+│   │   ├── projects.ts          # createProject, updateProject, deleteProject
 │   │   ├── users.ts             # updateProfile (bio, skills)
 │   │   └── votes.ts             # toggleVote (insert or delete vote row)
 │   ├── auth/
@@ -47,7 +47,9 @@ mitbauen/
 │   │   ├── new/
 │   │   │   └── page.tsx         # Create project form
 │   │   └── [id]/
-│   │       └── page.tsx         # Project detail: roles, apply, comments, owner panel
+│   │       ├── page.tsx         # Project detail: roles, apply, comments, owner panel
+│   │       └── edit/
+│   │           └── page.tsx     # Edit project (owner only); non-owners redirected to detail
 │   └── profile/
 │       ├── page.tsx             # Own profile — editable bio/skills, your projects list
 │       └── [id]/
@@ -64,6 +66,7 @@ mitbauen/
 │       ├── ApplicationsPanel.tsx   # Owner-only panel: view + accept/reject applications
 │       ├── ApplyModal.tsx          # Bottom-sheet on mobile / dialog on desktop
 │       ├── MarkCommentsRead.tsx    # Invisible client component — marks project comments read on mount
+│       ├── ProjectEditForm.tsx     # Pre-populated edit form (no roles); includes delete with confirmation
 │       ├── ProjectForm.tsx         # Create project form with client-side validation
 │       └── VoteButton.tsx          # Vote toggle with optimistic update (client component)
 ├── lib/
@@ -166,6 +169,7 @@ Sign out uses a **Server Action** (`app/actions/auth.ts`). It calls `supabase.au
 
 ### Protected routes (proxy.ts)
 - `/projects/new` — requires auth
+- `/projects/[id]/edit` — requires auth (ownership also verified in the page and action)
 - `/profile` — requires auth (own profile edit page)
 - `/messages` — requires auth
 - `/login` — redirects to `/projects` if already authenticated
@@ -237,11 +241,13 @@ npm run test:coverage    # Run with coverage report
 - [x] Application count on feed cards (flat second query to avoid 3-level RLS nesting)
 - [x] Profile page — own profile (`/profile`) with editable bio/skills; public profile (`/profile/[id]`) view-only
 - [x] Clickable owner names, comment authors, and applicant names link to `/profile/[id]`
-- [x] Unit + integration tests (152 tests, ~63% coverage)
+- [x] Edit project — `/projects/[id]/edit`, owner-only; edits title/description/why/commitment (roles read-only post-creation)
+- [x] Delete project — inline confirmation in danger zone; all related records cascade-deleted via FK
+- [x] Unit + integration tests (159 tests, ~63% coverage)
 - [x] GitHub Actions CI with type check, tests, coverage, and build smoke test
 
 ## What Needs Building
-- [ ] Edit/delete own project — edit button visible only to the project owner; delete with confirmation
+All core features are complete. The product is MVP-ready.
 
 ## Supabase CLI Commands
 ```bash

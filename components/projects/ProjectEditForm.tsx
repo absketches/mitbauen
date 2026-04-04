@@ -61,8 +61,9 @@ export default function ProjectEditForm({ projectId, initial }: Props) {
   async function handleDelete() {
     setDeleting(true)
     const result = await deleteProject(projectId)
-    if ('error' in result) { setError(result.error); setDeleting(false); return }
-    router.push('/projects')
+    // deleteProject redirects server-side on success; only returns on error
+    setError(result.error)
+    setDeleting(false)
   }
 
   return (

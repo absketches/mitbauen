@@ -19,6 +19,8 @@ The core mechanic: before anyone can see your idea, you must state what **you** 
 - **Vote toggle** — upvote or un-vote any project; optimistic update with immediate feedback
 - **Application count** — feed cards show applicant count when > 0 as social proof
 - **Profile pages** — own profile (`/profile`) shows your projects and lets you edit bio and skills; public profile (`/profile/[id]`) is view-only; owner names, comment authors, and applicant names are all clickable links to profiles
+- **Edit project** — owners can edit title, description, why it matters, and commitment from `/projects/[id]/edit`; non-owners are redirected
+- **Delete project** — owners can delete from the edit page with a two-step confirmation; all related data is removed via cascades
 - **OAuth sign-in** — sign in with GitHub or Google, both with explicit account selection flows
 
 ---
@@ -139,6 +141,7 @@ app/
     page.tsx          # Browse feed
     new/              # Create project
     [id]/             # Project detail
+    [id]/edit/        # Edit project (owner only)
   profile/
     page.tsx          # Own profile — editable bio/skills, your projects
     [id]/             # Public profile — view-only
@@ -154,6 +157,7 @@ components/
     ApplicationsPanel.tsx     # Owner applications view
     ApplyModal.tsx            # Apply to role modal
     MarkCommentsRead.tsx      # Marks project comments read on mount
+    ProjectEditForm.tsx       # Edit form with delete confirmation (owner only)
     ProjectForm.tsx           # Create form with validation
     VoteButton.tsx            # Vote toggle with optimistic update
 lib/
