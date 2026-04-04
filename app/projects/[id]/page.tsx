@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase-server'
+import AvatarImage from '@/components/AvatarImage'
 import {
   getProjectById,
   type ProjectComment,
@@ -91,72 +92,123 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
   )
 
   return (
-    <div className="max-w-3xl mx-auto py-12 px-4">
-      <Link href="/projects" className="text-sm text-gray-500 hover:text-gray-900 transition-colors mb-8 inline-block">
+    <div className="mx-auto max-w-7xl px-4 py-[clamp(2.75rem,7vw,4.5rem)] sm:px-6 lg:px-8">
+      <Link href="/projects" className="mb-8 inline-flex items-center rounded-full border border-black/10 bg-white/85 px-4 py-2 text-sm text-black/58 shadow-[0_10px_28px_rgba(0,0,0,0.04)] hover:bg-white hover:text-black">
         ← Back to ideas
       </Link>
 
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-semibold text-gray-900">{project.title}</h1>
-        <div className="flex items-center gap-3 mt-3 text-sm text-gray-500">
-          <span>by {project.users?.name ?? 'Anonymous'}</span>
-          <span>·</span>
-          <span className="flex items-center gap-1">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-            </svg>
-            {voteCount} {voteCount === 1 ? 'vote' : 'votes'}
-          </span>
-        </div>
-      </div>
+      <div className="grid gap-8 lg:grid-cols-[1.35fr_0.9fr] lg:items-start">
+        <div className="rounded-[2rem] border border-black/10 bg-white/92 p-6 shadow-[0_28px_90px_rgba(0,0,0,0.06)] sm:p-8">
+          <p className="text-[0.72rem] font-medium uppercase tracking-[0.34em] text-black/42">
+            Project
+          </p>
+          <h1 className="mt-4 text-[clamp(2.5rem,6vw,4.25rem)] font-semibold leading-tight tracking-[-0.05em] text-black">
+            {project.title}
+          </h1>
+          <div className="mt-5 flex flex-wrap items-center gap-3 text-sm text-black/52">
+            <span>by {project.users?.name ?? 'Anonymous'}</span>
+            <span className="h-1 w-1 rounded-full bg-black/20" />
+            <span className="inline-flex items-center gap-1 rounded-full border border-black/10 px-3 py-1">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+              </svg>
+              {voteCount} {voteCount === 1 ? 'vote' : 'votes'}
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full border border-black/10 px-3 py-1">
+              {openRoles.length} open {openRoles.length === 1 ? 'role' : 'roles'}
+            </span>
+          </div>
 
-      {/* Commitment badge */}
-      <div className="inline-flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 text-sm mb-8">
-        <span className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
-        <span className="text-gray-700">
-          Founder commits <strong>{project.commitment_hours_pw}h/week</strong> as <strong>{project.commitment_role}</strong>
-          {project.commitment_description && (
-            <span className="text-gray-500"> — {project.commitment_description}</span>
+          <section className="mt-10">
+            <h2 className="text-[0.72rem] font-medium uppercase tracking-[0.34em] text-black/42">
+              About
+            </h2>
+            <p className="mt-4 whitespace-pre-wrap text-base leading-8 text-black/68">
+              {project.description}
+            </p>
+          </section>
+
+          {project.why_it_matters && (
+            <section className="mt-10 border-t border-black/8 pt-10">
+              <h2 className="text-[0.72rem] font-medium uppercase tracking-[0.34em] text-black/42">
+                Why It Matters
+              </h2>
+              <p className="mt-4 whitespace-pre-wrap text-base leading-8 text-black/68">
+                {project.why_it_matters}
+              </p>
+            </section>
           )}
-        </span>
+        </div>
+
+        <aside className="space-y-4 lg:sticky lg:top-24">
+          <div className="rounded-[2rem] border border-black bg-black p-6 text-white shadow-[0_28px_90px_rgba(0,0,0,0.18)] lg:max-h-[calc(100dvh-8rem)] lg:overflow-y-auto">
+            <p className="text-[0.7rem] uppercase tracking-[0.32em] text-white/48">Founder Commitment</p>
+            <div className="mt-5 text-4xl font-semibold tracking-[-0.05em]">
+              {project.commitment_hours_pw ?? 0}h
+            </div>
+            <p className="mt-2 text-sm uppercase tracking-[0.22em] text-white/45">per week</p>
+            <div className="mt-6 rounded-[1.4rem] border border-white/12 bg-white/5 p-4">
+              <p className="text-[0.68rem] uppercase tracking-[0.28em] text-white/42">Role</p>
+              <p className="mt-2 text-lg font-medium text-white">
+                {project.commitment_role ?? 'Undisclosed'}
+              </p>
+              {project.commitment_description && (
+                <p className="mt-3 text-sm leading-6 text-white/68">
+                  {project.commitment_description}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="rounded-[2rem] border border-black/10 bg-white/92 p-6 shadow-[0_18px_60px_rgba(0,0,0,0.05)]">
+            <p className="text-[0.7rem] uppercase tracking-[0.32em] text-black/42">Project Snapshot</p>
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <div className="rounded-[1.25rem] border border-black/8 bg-black/[0.03] p-4">
+                <p className="text-[0.66rem] uppercase tracking-[0.26em] text-black/38">Owner</p>
+                <p className="mt-2 text-sm font-medium text-black">{project.users?.name ?? 'Anonymous'}</p>
+              </div>
+              <div className="rounded-[1.25rem] border border-black/8 bg-black/[0.03] p-4">
+                <p className="text-[0.66rem] uppercase tracking-[0.26em] text-black/38">Interest</p>
+                <p className="mt-2 text-sm font-medium text-black">{voteCount} {voteCount === 1 ? 'vote' : 'votes'}</p>
+              </div>
+            </div>
+          </div>
+        </aside>
       </div>
-
-      {/* Description */}
-      <section className="mb-8">
-        <h2 className="text-lg font-medium text-gray-900 mb-3">About</h2>
-        <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">{project.description}</p>
-      </section>
-
-      {project.why_it_matters && (
-        <section className="mb-8">
-          <h2 className="text-lg font-medium text-gray-900 mb-3">Why it matters</h2>
-          <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">{project.why_it_matters}</p>
-        </section>
-      )}
 
       {/* Open roles */}
       {openRoles.length > 0 && (
-        <section className="mb-8">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">
-            Open roles <span className="text-gray-400 font-normal text-base">({openRoles.length})</span>
-          </h2>
-          <div className="space-y-3">
+        <section className="mt-10">
+          <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-[0.72rem] font-medium uppercase tracking-[0.34em] text-black/42">
+                Open Roles
+              </p>
+              <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-black">
+                Where help is needed now
+              </h2>
+            </div>
+            <div className="text-sm text-black/45">
+              {openRoles.length} {openRoles.length === 1 ? 'role' : 'roles'} available
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
             {openRoles.map((role: ProjectRole) => {
               const myApp = roleToApplication.get(role.id)
               const skillsNeeded = role.skills_needed ?? []
               return (
-                <div key={role.id} className="border border-gray-200 rounded-xl p-5">
+                <div key={role.id} className="rounded-[1.9rem] border border-black/10 bg-white/92 p-6 shadow-[0_18px_60px_rgba(0,0,0,0.05)]">
                   <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h3 className="font-medium text-gray-900">{role.title}</h3>
+                    <div className="min-w-0">
+                      <h3 className="text-xl font-semibold tracking-[-0.03em] text-black">{role.title}</h3>
                       {role.description && (
-                        <p className="text-sm text-gray-500 mt-1">{role.description}</p>
+                        <p className="mt-2 text-sm leading-6 text-black/58">{role.description}</p>
                       )}
                       {skillsNeeded.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mt-3">
+                        <div className="mt-4 flex flex-wrap gap-2">
                           {skillsNeeded.map((skill: string) => (
-                            <span key={skill} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md">
+                            <span key={skill} className="rounded-full border border-black/10 bg-black/[0.03] px-3 py-1 text-xs font-medium text-black/62">
                               {skill}
                             </span>
                           ))}
@@ -204,31 +256,43 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
       )}
 
       {/* Comments */}
-      <section>
-        <h2 className="text-lg font-medium text-gray-900 mb-4">
-          Comments {comments.length > 0 && <span className="text-gray-400 font-normal text-base">({comments.length})</span>}
-        </h2>
+      <section className="mt-10 rounded-[2rem] border border-black/10 bg-white/92 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.05)] sm:p-8">
+        <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-[0.72rem] font-medium uppercase tracking-[0.34em] text-black/42">
+              Discussion
+            </p>
+            <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-black">
+              Comments {comments.length > 0 && <span className="font-normal text-black/32">({comments.length})</span>}
+            </h2>
+          </div>
+          <div className="text-sm text-black/45">
+            Open conversation around the project
+          </div>
+        </div>
 
         {comments.length === 0 ? (
-          <p className="text-gray-400 text-sm mb-6">No comments yet.</p>
+          <p className="mb-6 rounded-[1.5rem] border border-dashed border-black/12 bg-black/[0.02] px-5 py-8 text-center text-sm text-black/42">
+            No comments yet.
+          </p>
         ) : (
-          <div className="max-h-96 overflow-y-auto space-y-4 mb-6 pr-2">
+          <div className="mb-6 max-h-[28rem] space-y-5 overflow-y-auto pr-2">
             {comments.map((comment: ProjectComment) => (
-              <div key={comment.id} className="flex gap-3">
-                <div className="w-7 h-7 rounded-full bg-gray-200 shrink-0 overflow-hidden flex items-center justify-center text-xs font-medium text-gray-600">
+              <div key={comment.id} className="flex gap-3 rounded-[1.5rem] border border-black/8 bg-black/[0.02] p-4">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-black/[0.08] text-xs font-medium text-black/60">
                   {comment.users?.avatar_url
-                    ? <img src={comment.users.avatar_url} alt="" className="w-full h-full object-cover" />
+                    ? <AvatarImage src={comment.users.avatar_url} alt="" size={36} className="h-full w-full object-cover" />
                     : comment.users?.name?.[0]?.toUpperCase() ?? '?'
                   }
                 </div>
-                <div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-sm font-medium text-gray-900">{comment.users?.name ?? 'Anonymous'}</span>
-                    <span className="text-xs text-gray-400">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-medium text-black">{comment.users?.name ?? 'Anonymous'}</span>
+                    <span className="text-xs text-black/35">
                       {new Date(comment.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-600 mt-0.5">{comment.body}</p>
+                  <p className="mt-1 text-sm leading-6 text-black/65">{comment.body}</p>
                 </div>
               </div>
             ))}
@@ -236,24 +300,26 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
         )}
 
         {user ? (
-          <form action={addComment.bind(null, project.id) as (fd: FormData) => void}>
+          <form action={addComment.bind(null, project.id) as (fd: FormData) => void} className="rounded-[1.6rem] border border-black/10 bg-black/[0.02] p-4">
             <textarea
               name="body"
               required
               rows={3}
               placeholder="Leave a comment..."
-              className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900"
+              className="w-full rounded-[1.2rem] border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/32 focus:outline-none focus:ring-2 focus:ring-black"
             />
-            <button
-              type="submit"
-              className="mt-2 text-sm bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
-            >
-              Post comment
-            </button>
+            <div className="mt-3 flex justify-end">
+              <button
+                type="submit"
+                className="inline-flex items-center rounded-full border border-black bg-black px-5 py-2.5 text-sm font-medium text-white hover:-translate-y-0.5 hover:bg-black/85"
+              >
+                Post comment
+              </button>
+            </div>
           </form>
         ) : (
-          <p className="text-sm text-gray-400">
-            <Link href="/login" className="underline hover:text-gray-700">Sign in</Link> to leave a comment.
+          <p className="text-sm text-black/42">
+            <Link href="/login" className="underline hover:text-black">Sign in</Link> to leave a comment.
           </p>
         )}
       </section>

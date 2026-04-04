@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { sendMessage, markThreadRead } from '@/app/actions/messages'
+import AvatarImage from '@/components/AvatarImage'
 
 type Message = {
   id: string
@@ -58,51 +59,73 @@ export default function ApplicationThread({
   }, [open, messages.length])
 
   return (
-    <div ref={containerRef} id={`thread-${applicationId}`} className="mt-3 border-t border-gray-100 pt-3 scroll-mt-20">
+    <div
+      ref={containerRef}
+      id={`thread-${applicationId}`}
+      className="mt-5 scroll-mt-24 rounded-[1.5rem] border border-black/8 bg-black/[0.025] p-4 sm:p-5"
+    >
       <button
         onClick={() => setOpen(prev => !prev)}
-        className="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-800 transition-colors"
+        className="flex w-full items-center justify-between gap-3 text-left"
       >
-        <svg className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
-        {open ? 'Hide thread' : 'Messages'}
-        {!open && unreadCount > 0 && (
-          <span className="bg-gray-900 text-white text-xs rounded-full px-1.5 py-0.5 leading-none">
-            {unreadCount}
+        <div className="flex items-center gap-3">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full border border-black/10 bg-white/85 text-black/52">
+            <svg className={`h-3.5 w-3.5 transition-transform ${open ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
           </span>
-        )}
-        {!open && messages.length > 0 && unreadCount === 0 && (
-          <span className="text-gray-400">({messages.length})</span>
-        )}
+          <div>
+            <p className="text-[0.68rem] font-medium uppercase tracking-[0.24em] text-black/38">
+              Conversation
+            </p>
+            <p className="text-sm font-medium text-black">
+              {open ? 'Hide thread' : 'Messages'}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {!open && messages.length > 0 && unreadCount === 0 && (
+            <span className="rounded-full border border-black/10 bg-white/90 px-3 py-1 text-xs text-black/44">
+              {messages.length} {messages.length === 1 ? 'message' : 'messages'}
+            </span>
+          )}
+          {!open && unreadCount > 0 && (
+            <span className="rounded-full bg-black px-2.5 py-1 text-xs font-medium leading-none text-white">
+              {unreadCount} new
+            </span>
+          )}
+        </div>
       </button>
 
       {open && (
-        <div className="mt-3 space-y-3">
+        <div className="mt-4 space-y-4">
           {messages.length === 0 ? (
-            <p className="text-xs text-gray-400">No messages yet. Start the conversation.</p>
+            <div className="rounded-[1.2rem] border border-dashed border-black/12 bg-white/70 px-4 py-6 text-sm text-black/42">
+              No messages yet. Start the conversation.
+            </div>
           ) : (
-            <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
+            <div className="max-h-72 space-y-3 overflow-y-auto pr-1">
               {messages.map(msg => {
                 const isMe = msg.sender_id === currentUserId
                 const initials = msg.users?.name?.[0]?.toUpperCase() ?? '?'
                 return (
-                  <div key={msg.id} className={`flex gap-2 ${isMe ? 'flex-row-reverse' : ''}`}>
-                    <div className="w-6 h-6 rounded-full bg-gray-200 shrink-0 overflow-hidden flex items-center justify-center text-xs font-medium text-gray-600">
+                  <div key={msg.id} className={`flex gap-3 ${isMe ? 'flex-row-reverse' : ''}`}>
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-black/[0.08] text-xs font-medium text-black/56">
                       {msg.users?.avatar_url
-                        ? <img src={msg.users.avatar_url} alt="" className="w-full h-full object-cover" />
+                        ? <AvatarImage src={msg.users.avatar_url} alt="" size={28} className="h-full w-full object-cover" />
                         : initials
                       }
                     </div>
-                    <div className={`max-w-[75%] ${isMe ? 'items-end' : 'items-start'} flex flex-col`}>
-                      <div className={`px-3 py-2 rounded-2xl text-sm ${
+                    <div className={`flex max-w-[80%] flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                      <div className={`rounded-[1.35rem] px-4 py-3 text-sm leading-6 ${
                         isMe
-                          ? 'bg-gray-900 text-white rounded-tr-sm'
-                          : 'bg-gray-100 text-gray-900 rounded-tl-sm'
+                          ? 'rounded-tr-sm bg-black text-white'
+                          : 'rounded-tl-sm border border-black/8 bg-white text-black/72'
                       }`}>
                         {msg.body}
                       </div>
-                      <span className="text-xs text-gray-400 mt-0.5 px-1">
+                      <span className="mt-1 px-1 text-xs text-black/35">
                         {new Date(msg.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                       </span>
                     </div>
@@ -115,17 +138,17 @@ export default function ApplicationThread({
 
           <form
             action={sendMessage.bind(null, applicationId, projectId) as (formData: FormData) => void}
-            className="flex gap-2"
+            className="flex flex-col gap-3 sm:flex-row"
           >
             <input
               name="body"
               required
               placeholder="Write a message..."
-              className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900"
+              className="min-h-11 flex-1 rounded-full border border-black/12 bg-white px-4 py-2.5 text-sm text-black placeholder:text-black/34 focus:outline-none focus:ring-2 focus:ring-black"
             />
             <button
               type="submit"
-              className="text-sm bg-gray-900 text-white px-3 py-1.5 rounded-lg hover:bg-gray-700 transition-colors shrink-0"
+              className="shrink-0 rounded-full border border-black bg-black px-5 py-2.5 text-sm font-medium text-white hover:-translate-y-0.5 hover:bg-black/85"
             >
               Send
             </button>

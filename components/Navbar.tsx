@@ -28,16 +28,21 @@ export default async function Navbar() {
   }
 
   return (
-    <header className="border-b border-gray-100 bg-white sticky top-0 z-40">
-      <nav className="w-full px-6 h-14 flex items-center justify-between">
-        <Link href="/" className="text-base font-semibold text-gray-900 hover:text-gray-600 transition-colors">
-          Mitbauen
+    <header className="sticky top-0 z-40 border-b border-black/10 bg-[rgba(250,250,247,0.82)] backdrop-blur-xl">
+      <nav className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between px-4 sm:h-16 sm:px-6">
+        <Link href="/" className="group flex min-w-0 flex-col">
+          <span className="hidden text-[0.65rem] uppercase tracking-[0.34em] text-black/45 transition-colors group-hover:text-black/60 sm:block">
+            Build Together
+          </span>
+          <span className="text-sm font-semibold tracking-[-0.02em] text-black sm:text-base">
+            Mitbauen
+          </span>
         </Link>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-1.5 sm:gap-3">
           <Link
             href="/projects"
-            className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+            className="hidden rounded-full px-3 py-2 text-sm font-medium text-black/60 hover:bg-black/[0.04] hover:text-black md:inline-flex"
           >
             Browse ideas
           </Link>
@@ -46,9 +51,10 @@ export default async function Navbar() {
             <>
               <Link
                 href="/projects/new"
-                className="text-sm bg-gray-900 text-white px-4 py-1.5 rounded-lg hover:bg-gray-700 transition-colors"
+                className="inline-flex items-center rounded-full border border-black bg-black px-3 py-2 text-sm font-medium text-white hover:-translate-y-0.5 hover:bg-black/85 sm:px-4"
               >
-                Post an idea
+                <span className="sm:hidden">Post</span>
+                <span className="hidden sm:inline">Post an idea</span>
               </Link>
 
               {/* Notification bell — opens Facebook-style dropdown */}
@@ -63,7 +69,7 @@ export default async function Navbar() {
           ) : (
             <Link
               href="/login"
-              className="text-sm bg-gray-900 text-white px-4 py-1.5 rounded-lg hover:bg-gray-700 transition-colors"
+              className="inline-flex items-center rounded-full border border-black bg-black px-3 py-2 text-sm font-medium text-white hover:-translate-y-0.5 hover:bg-black/85 sm:px-4"
             >
               Sign in
             </Link>

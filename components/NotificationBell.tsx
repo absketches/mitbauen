@@ -6,15 +6,16 @@ import { markThreadRead } from '@/app/actions/messages'
 import { markCommentsRead } from '@/app/actions/comments'
 import type { NotificationItem } from '@/lib/db/notifications'
 import { formatLocalTime, notificationLabel } from '@/lib/notifications-ui'
+import AvatarImage from './AvatarImage'
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────
 
 function Avatar({ name, url }: { name: string | null; url: string | null }) {
   const initials = name?.[0]?.toUpperCase() ?? '?'
   return (
-    <div className="w-9 h-9 rounded-full bg-gray-200 shrink-0 overflow-hidden flex items-center justify-center text-sm font-medium text-gray-600">
+    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-black/[0.08] text-sm font-medium text-black/58">
       {url
-        ? <img src={url} alt="" className="w-full h-full object-cover" />
+        ? <AvatarImage src={url} alt="" size={40} className="h-full w-full object-cover" />
         : initials
       }
     </div>
@@ -60,7 +61,7 @@ export default function NotificationBell({ notifications }: Props) {
       {/* Bell button */}
       <button
         onClick={() => setOpen(prev => !prev)}
-        className="relative p-1.5 text-gray-500 hover:text-gray-900 transition-colors"
+        className="relative flex h-11 w-11 items-center justify-center rounded-full border border-black/10 bg-white/74 text-black/52 hover:bg-white hover:text-black"
         aria-label={count > 0 ? `${count} notifications` : 'Notifications'}
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -68,7 +69,7 @@ export default function NotificationBell({ notifications }: Props) {
             d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
         {count > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 bg-gray-900 text-white text-[10px] font-medium rounded-full w-4 h-4 flex items-center justify-center leading-none">
+          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-black px-1 text-[10px] font-medium leading-none text-white">
             {count > 9 ? '9+' : count}
           </span>
         )}
@@ -76,53 +77,54 @@ export default function NotificationBell({ notifications }: Props) {
 
       {/* Dropdown panel */}
       {open && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
+        <div className="absolute right-0 z-50 mt-3 w-[min(22rem,calc(100vw-1rem))] overflow-hidden rounded-[1.6rem] border border-black/10 bg-[rgba(250,250,247,0.98)] shadow-[0_24px_80px_rgba(0,0,0,0.12)] sm:w-96">
           {/* Header */}
-          <div className="px-4 py-3 border-b border-gray-100">
-            <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
+          <div className="border-b border-black/8 px-5 py-4">
+            <p className="text-[0.68rem] font-medium uppercase tracking-[0.28em] text-black/38">Inbox</p>
+            <h3 className="mt-1 text-sm font-semibold text-black">Notifications</h3>
           </div>
 
           {/* Items */}
           {notifications.length === 0 ? (
-            <div className="px-4 py-8 text-center text-sm text-gray-400">
+            <div className="px-5 py-10 text-center text-sm text-black/42">
               All caught up!
             </div>
           ) : (
-            <ul className="max-h-[480px] overflow-y-auto divide-y divide-gray-50">
+            <ul className="max-h-[480px] overflow-y-auto divide-y divide-black/6">
               {notifications.map(item => (
                 <li key={item.id}>
                   <button
                     onClick={() => handleClick(item)}
-                    className="w-full flex items-start gap-3 px-4 py-3.5 hover:bg-gray-50 transition-colors text-left"
+                    className="flex w-full items-start gap-3 px-5 py-4 text-left hover:bg-black/[0.03]"
                   >
                     <Avatar name={item.actorName} url={item.actorAvatar} />
 
                     <div className="flex-1 min-w-0">
                       {/* Label + timestamp on same row */}
                       <div className="flex items-start justify-between gap-2">
-                        <p className="text-xs font-medium text-gray-800 leading-snug">
+                        <p className="text-xs font-medium leading-snug text-black/78">
                           {notificationLabel(item)}
                         </p>
-                        <span className="text-[11px] text-gray-400 shrink-0 mt-0.5 whitespace-nowrap">
+                        <span className="mt-0.5 shrink-0 whitespace-nowrap text-[11px] text-black/32">
                           {formatLocalTime(item.latestAt)}
                         </span>
                       </div>
 
                       {/* Message / comment preview */}
-                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
+                      <p className="mt-1 text-xs text-black/48 line-clamp-2">
                         {item.latestBody}
                       </p>
 
                       {/* Unread count badge (only when > 1 unread) */}
                       {item.unreadCount > 1 && (
-                        <span className="mt-1 inline-flex items-center text-[11px] text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">
+                        <span className="mt-2 inline-flex items-center rounded-full border border-black/8 bg-white px-2.5 py-1 text-[11px] text-black/46">
                           {item.unreadCount} unread
                         </span>
                       )}
                     </div>
 
                     {/* Unread dot */}
-                    <span className="mt-1.5 w-2 h-2 rounded-full bg-gray-900 shrink-0" />
+                    <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-black" />
                   </button>
                 </li>
               ))}

@@ -120,189 +120,270 @@ export default function ProjectForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-2xl mx-auto py-12 px-4 space-y-10">
-      <div>
-        <h1 className="text-3xl font-semibold text-gray-900">Post your idea</h1>
-        <p className="text-gray-500 mt-2">Tell people what you&apos;re building and what you&apos;re putting in.</p>
-      </div>
+    <div className="mx-auto max-w-7xl px-4 py-[clamp(2.75rem,7vw,4.5rem)] sm:px-6 lg:px-8">
+      <div className="grid gap-[clamp(1.5rem,4vw,2.5rem)] lg:grid-cols-[minmax(17rem,0.78fr)_minmax(0,1.22fr)] lg:items-start">
+        <aside className="space-y-4 lg:sticky lg:top-24">
+          <div className="rounded-[2rem] border border-black bg-black p-6 text-white shadow-[0_28px_90px_rgba(0,0,0,0.16)] sm:p-8">
+            <p className="text-[0.72rem] font-medium uppercase tracking-[0.34em] text-white/48">
+              New Project
+            </p>
+            <h1 className="mt-4 text-4xl font-semibold tracking-[-0.05em] text-white">
+              Post your idea
+            </h1>
+            <p className="mt-4 text-sm leading-7 text-white/68">
+              Tell people what you&apos;re building and what you&apos;re putting in.
+            </p>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-          {error}
-        </div>
-      )}
-
-      {/* The idea */}
-      <section className="space-y-4">
-        <h2 className="text-lg font-medium text-gray-900 border-b border-gray-100 pb-2">
-          The idea
-        </h2>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Title <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            required
-            placeholder="e.g. A platform for local food producers to sell directly"
-            value={form.title}
-            onChange={e => updateForm('title', e.target.value)}
-            className={`w-full border rounded-lg px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 ${fieldErrors.title ? 'border-red-400' : 'border-gray-200'}`}
-          />
-          {fieldErrors.title && <p className="text-xs text-red-500 mt-1">{fieldErrors.title}</p>}
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Description <span className="text-red-500">*</span>
-          </label>
-          <textarea
-            required
-            rows={6}
-            placeholder="What is this project? How does it work?"
-            value={form.description}
-            onChange={e => updateForm('description', e.target.value)}
-            className={`w-full border rounded-lg px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 ${fieldErrors.description ? 'border-red-400' : 'border-gray-200'}`}
-          />
-          {fieldErrors.description && <p className="text-xs text-red-500 mt-1">{fieldErrors.description}</p>}
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Why does this matter?
-          </label>
-          <textarea
-            rows={4}
-            placeholder="What problem does this solve? Who benefits?"
-            value={form.why_it_matters}
-            onChange={e => updateForm('why_it_matters', e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900"
-          />
-        </div>
-      </section>
-
-      {/* Commitment signal */}
-      <section className="space-y-4">
-        <div>
-          <h2 className="text-lg font-medium text-gray-900 border-b border-gray-100 pb-2">
-            Your commitment
-          </h2>
-          <p className="text-sm text-gray-500 mt-2">
-            This is the most important part. Show people you are serious.
-          </p>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Hours per week <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="number"
-            required
-            min={1}
-            max={80}
-            placeholder="e.g. 10"
-            value={form.commitment_hours_pw}
-            onChange={e => updateForm('commitment_hours_pw', e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Your role in this project <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            required
-            placeholder="e.g. Backend developer, Product designer, Business lead"
-            value={form.commitment_role}
-            onChange={e => updateForm('commitment_role', e.target.value)}
-            className={`w-full border rounded-lg px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 ${fieldErrors.commitment_role ? 'border-red-400' : 'border-gray-200'}`}
-          />
-          {fieldErrors.commitment_role && <p className="text-xs text-red-500 mt-1">{fieldErrors.commitment_role}</p>}
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            What you are bringing
-          </label>
-          <textarea
-            rows={4}
-            placeholder="e.g. I will handle all backend architecture, database design and API development"
-            value={form.commitment_description}
-            onChange={e => updateForm('commitment_description', e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900"
-          />
-        </div>
-      </section>
-
-      {/* Roles needed */}
-      <section className="space-y-4">
-        <div>
-          <h2 className="text-lg font-medium text-gray-900 border-b border-gray-100 pb-2">
-            Roles needed
-          </h2>
-          <p className="text-sm text-gray-500 mt-2">
-            Who do you need to build this?
-          </p>
-        </div>
-        {roles.map((role, index) => (
-          <div key={index} className="border border-gray-200 rounded-lg p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">Role {index + 1}</span>
-              {roles.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => removeRole(index)}
-                  className="text-sm text-red-500 hover:text-red-700"
-                >
-                  Remove
-                </button>
-              )}
+            <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+              <div className="rounded-[1.4rem] border border-white/12 bg-white/6 p-4">
+                <p className="text-[0.66rem] uppercase tracking-[0.28em] text-white/42">Signal</p>
+                <p className="mt-2 text-lg font-medium text-white">Commitment matters most</p>
+                <p className="mt-2 text-sm leading-6 text-white/62">
+                  People respond better when your time and role are concrete.
+                </p>
+              </div>
+              <div className="rounded-[1.4rem] border border-white/12 bg-white/6 p-4">
+                <p className="text-[0.66rem] uppercase tracking-[0.28em] text-white/42">Open roles</p>
+                <p className="mt-2 text-lg font-medium text-white">{roles.length}</p>
+                <p className="mt-2 text-sm leading-6 text-white/62">
+                  Add focused roles so people can immediately see where they fit.
+                </p>
+              </div>
             </div>
-            <input
-              type="text"
-              placeholder="e.g. Frontend developer"
-              value={role.title}
-              onChange={e => updateRole(index, 'title', e.target.value)}
-              className={`w-full border rounded-lg px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 ${fieldErrors[`role_${index}_title`] ? 'border-red-400' : 'border-gray-200'}`}
-            />
-            {fieldErrors[`role_${index}_title`] && <p className="text-xs text-red-500 mt-1">{fieldErrors[`role_${index}_title`]}</p>}
-            <input
-              type="text"
-              placeholder="Skills needed (comma separated): e.g. React, TypeScript, CSS"
-              onChange={e => updateRoleSkills(index, e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900"
-            />
-            <textarea
-              rows={2}
-              placeholder="What will this person work on?"
-              value={role.description}
-              onChange={e => updateRole(index, 'description', e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900"
-            />
           </div>
-        ))}
-        <button
-          type="button"
-          onClick={addRole}
-          className="text-sm text-gray-600 border border-gray-200 rounded-lg px-4 py-2 hover:bg-gray-50 transition-colors"
-        >
-          + Add another role
-        </button>
-      </section>
 
-      <div className="flex gap-3">
-        <button
-          type="submit"
-          disabled={loading}
-          className="flex-1 bg-gray-900 text-white py-3 rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
-        >
-          {loading ? 'Posting...' : 'Post your idea'}
-        </button>
-        <Link
-          href="/projects"
-          className="px-6 py-3 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors text-center"
-        >
-          Cancel
-        </Link>
+          <div className="rounded-[2rem] border border-black/10 bg-white/92 p-6 shadow-[0_18px_60px_rgba(0,0,0,0.05)]">
+            <p className="text-[0.7rem] uppercase tracking-[0.32em] text-black/42">A strong post</p>
+            <div className="mt-4 space-y-4 text-sm leading-7 text-black/58">
+              <p>Be specific about the problem, the people it helps, and what already exists.</p>
+              <p>Use the commitment section to show you are already investing real time.</p>
+              <p>Describe roles in terms of work to be done, not just titles.</p>
+            </div>
+          </div>
+        </aside>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {error && (
+            <div className="rounded-[1.5rem] border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+
+          <section className="rounded-[2rem] border border-black/10 bg-white/92 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.05)] sm:p-8">
+            <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-[0.72rem] font-medium uppercase tracking-[0.34em] text-black/42">
+                  The idea
+                </p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-black">
+                  Explain what you are building
+                </h2>
+              </div>
+              <p className="text-sm text-black/45">
+                Clear context makes good collaborators self-select.
+              </p>
+            </div>
+
+            <div className="space-y-5">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-black/72">
+                  Title <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. A platform for local food producers to sell directly"
+                  value={form.title}
+                  onChange={e => updateForm('title', e.target.value)}
+                  className={`w-full rounded-[1.2rem] border bg-white px-4 py-3 text-black placeholder:text-black/34 focus:outline-none focus:ring-2 focus:ring-black ${fieldErrors.title ? 'border-red-400' : 'border-black/12'}`}
+                />
+                {fieldErrors.title && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.title}</p>}
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-black/72">
+                  Description <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  required
+                  rows={6}
+                  placeholder="What is this project? How does it work?"
+                  value={form.description}
+                  onChange={e => updateForm('description', e.target.value)}
+                  className={`w-full rounded-[1.2rem] border bg-white px-4 py-3 text-black placeholder:text-black/34 focus:outline-none focus:ring-2 focus:ring-black ${fieldErrors.description ? 'border-red-400' : 'border-black/12'}`}
+                />
+                {fieldErrors.description && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.description}</p>}
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-black/72">
+                  Why does this matter?
+                </label>
+                <textarea
+                  rows={4}
+                  placeholder="What problem does this solve? Who benefits?"
+                  value={form.why_it_matters}
+                  onChange={e => updateForm('why_it_matters', e.target.value)}
+                  className="w-full rounded-[1.2rem] border border-black/12 bg-white px-4 py-3 text-black placeholder:text-black/34 focus:outline-none focus:ring-2 focus:ring-black"
+                />
+              </div>
+            </div>
+          </section>
+
+          <section className="rounded-[2rem] border border-black/10 bg-white/92 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.05)] sm:p-8">
+            <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-[0.72rem] font-medium uppercase tracking-[0.34em] text-black/42">
+                  Your commitment
+                </p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-black">
+                  Show people you are serious
+                </h2>
+              </div>
+              <p className="text-sm text-black/45">
+                This is the most important part.
+              </p>
+            </div>
+
+            <div className="space-y-5">
+              <div className="grid gap-5 sm:grid-cols-[0.48fr_1fr]">
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-black/72">
+                    Hours per week <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min={1}
+                    max={80}
+                    placeholder="e.g. 10"
+                    value={form.commitment_hours_pw}
+                    onChange={e => updateForm('commitment_hours_pw', e.target.value)}
+                    className="w-full rounded-[1.2rem] border border-black/12 bg-white px-4 py-3 text-black placeholder:text-black/34 focus:outline-none focus:ring-2 focus:ring-black"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-black/72">
+                    Your role in this project <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Backend developer, Product designer, Business lead"
+                    value={form.commitment_role}
+                    onChange={e => updateForm('commitment_role', e.target.value)}
+                    className={`w-full rounded-[1.2rem] border bg-white px-4 py-3 text-black placeholder:text-black/34 focus:outline-none focus:ring-2 focus:ring-black ${fieldErrors.commitment_role ? 'border-red-400' : 'border-black/12'}`}
+                  />
+                  {fieldErrors.commitment_role && <p className="mt-1.5 text-xs text-red-500">{fieldErrors.commitment_role}</p>}
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-black/72">
+                  What you are bringing
+                </label>
+                <textarea
+                  rows={4}
+                  placeholder="e.g. I will handle all backend architecture, database design and API development"
+                  value={form.commitment_description}
+                  onChange={e => updateForm('commitment_description', e.target.value)}
+                  className="w-full rounded-[1.2rem] border border-black/12 bg-white px-4 py-3 text-black placeholder:text-black/34 focus:outline-none focus:ring-2 focus:ring-black"
+                />
+              </div>
+            </div>
+          </section>
+
+          <section className="rounded-[2rem] border border-black/10 bg-white/92 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.05)] sm:p-8">
+            <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-[0.72rem] font-medium uppercase tracking-[0.34em] text-black/42">
+                  Roles needed
+                </p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-black">
+                  Who do you need to build this?
+                </h2>
+              </div>
+              <div className="rounded-full border border-black/10 bg-black/[0.03] px-4 py-2 text-sm text-black/48">
+                {roles.length} {roles.length === 1 ? 'role' : 'roles'}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {roles.map((role, index) => (
+                <div key={index} className="rounded-[1.5rem] border border-black/8 bg-black/[0.025] p-5">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <span className="text-sm font-medium uppercase tracking-[0.22em] text-black/44">
+                      Role {index + 1}
+                    </span>
+                    {roles.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeRole(index)}
+                        className="text-sm text-black/42 hover:text-black"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <input
+                        type="text"
+                        placeholder="e.g. Frontend developer"
+                        value={role.title}
+                        onChange={e => updateRole(index, 'title', e.target.value)}
+                        className={`w-full rounded-[1.1rem] border bg-white px-4 py-3 text-black placeholder:text-black/34 focus:outline-none focus:ring-2 focus:ring-black ${fieldErrors[`role_${index}_title`] ? 'border-red-400' : 'border-black/12'}`}
+                      />
+                      {fieldErrors[`role_${index}_title`] && <p className="mt-1.5 text-xs text-red-500">{fieldErrors[`role_${index}_title`]}</p>}
+                    </div>
+
+                    <input
+                      type="text"
+                      placeholder="Skills needed (comma separated): e.g. React, TypeScript, CSS"
+                      onChange={e => updateRoleSkills(index, e.target.value)}
+                      className="w-full rounded-[1.1rem] border border-black/12 bg-white px-4 py-3 text-black placeholder:text-black/34 focus:outline-none focus:ring-2 focus:ring-black"
+                    />
+
+                    <textarea
+                      rows={2}
+                      placeholder="What will this person work on?"
+                      value={role.description}
+                      onChange={e => updateRole(index, 'description', e.target.value)}
+                      className="w-full rounded-[1.1rem] border border-black/12 bg-white px-4 py-3 text-black placeholder:text-black/34 focus:outline-none focus:ring-2 focus:ring-black"
+                    />
+                  </div>
+                </div>
+              ))}
+
+              <button
+                type="button"
+                onClick={addRole}
+                className="inline-flex items-center rounded-full border border-black/12 bg-white px-4 py-2.5 text-sm font-medium text-black/64 hover:bg-black/[0.03]"
+              >
+                + Add another role
+              </button>
+            </div>
+          </section>
+
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <button
+              type="submit"
+              disabled={loading}
+              className="inline-flex flex-1 items-center justify-center rounded-full border border-black bg-black px-6 py-3 text-sm font-medium text-white hover:-translate-y-0.5 hover:bg-black/85 disabled:opacity-50"
+            >
+              {loading ? 'Posting...' : 'Post your idea'}
+            </button>
+            <Link
+              href="/projects"
+              className="inline-flex items-center justify-center rounded-full border border-black/12 bg-white px-6 py-3 text-center text-sm font-medium text-black/64 hover:bg-black/[0.03]"
+            >
+              Cancel
+            </Link>
+          </div>
+        </form>
       </div>
-    </form>
+    </div>
   )
 }

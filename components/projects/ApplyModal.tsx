@@ -21,6 +21,7 @@ export default function ApplyModal({ role, projectId, alreadyApplied }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(alreadyApplied)
+  const skills = role.skills_needed ?? []
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -41,7 +42,7 @@ export default function ApplyModal({ role, projectId, alreadyApplied }: Props) {
 
   if (submitted) {
     return (
-      <span className="shrink-0 text-xs text-green-600 border border-green-200 bg-green-50 px-3 py-1.5 rounded-lg">
+      <span className="shrink-0 rounded-full border border-black bg-black px-3.5 py-2 text-xs font-medium uppercase tracking-[0.18em] text-white">
         Applied
       </span>
     )
@@ -51,7 +52,7 @@ export default function ApplyModal({ role, projectId, alreadyApplied }: Props) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="shrink-0 text-sm bg-gray-900 text-white px-4 py-1.5 rounded-lg hover:bg-gray-700 transition-colors"
+        className="shrink-0 rounded-full border border-black bg-black px-4 py-2 text-sm font-medium text-white hover:-translate-y-0.5 hover:bg-black/85"
       >
         Apply
       </button>
@@ -60,29 +61,34 @@ export default function ApplyModal({ role, projectId, alreadyApplied }: Props) {
         <>
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black/40 z-40"
+            className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-40"
             onClick={() => setOpen(false)}
           />
 
           {/* Modal — bottom sheet on mobile, centered on desktop */}
           <div className="fixed z-50 inset-x-0 bottom-0 sm:inset-0 sm:flex sm:items-center sm:justify-center sm:p-4">
-            <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg shadow-xl">
+            <div className="max-h-[92dvh] w-full overflow-y-auto rounded-t-[2rem] border border-black/10 bg-[rgba(250,250,247,0.98)] shadow-[0_30px_100px_rgba(0,0,0,0.18)] sm:max-h-[90dvh] sm:max-w-2xl sm:rounded-[2rem]">
               {/* Handle (mobile) */}
               <div className="flex justify-center pt-3 pb-1 sm:hidden">
-                <div className="w-10 h-1 rounded-full bg-gray-200" />
+                <div className="h-1 w-10 rounded-full bg-black/14" />
               </div>
 
-              <div className="px-6 pt-4 pb-6">
-                <div className="flex items-start justify-between mb-5">
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-900">Apply for {role.title}</h2>
+              <div className="px-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-4 sm:px-8 sm:pb-8">
+                <div className="mb-6 flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="text-[0.72rem] font-medium uppercase tracking-[0.34em] text-black/42">
+                      Application
+                    </p>
+                    <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-black">
+                      Apply for {role.title}
+                    </h2>
                     {role.description && (
-                      <p className="text-sm text-gray-500 mt-1">{role.description}</p>
+                      <p className="mt-3 text-sm leading-7 text-black/56">{role.description}</p>
                     )}
                   </div>
                   <button
                     onClick={() => setOpen(false)}
-                    className="text-gray-400 hover:text-gray-600 ml-4 mt-0.5"
+                    className="mt-0.5 ml-4 rounded-full border border-black/10 bg-white/80 p-2 text-black/42 hover:bg-white hover:text-black"
                     aria-label="Close"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -91,50 +97,73 @@ export default function ApplyModal({ role, projectId, alreadyApplied }: Props) {
                   </button>
                 </div>
 
+                <div className="mb-6 grid gap-3 sm:grid-cols-[1fr_0.78fr]">
+                  <div className="rounded-[1.45rem] border border-black/8 bg-white/84 p-4">
+                    <p className="text-[0.68rem] uppercase tracking-[0.26em] text-black/38">What to include</p>
+                    <p className="mt-3 text-sm leading-6 text-black/58">
+                      Explain why this project matters to you and what you can contribute from day one.
+                    </p>
+                  </div>
+                  <div className="rounded-[1.45rem] border border-black/8 bg-black/[0.025] p-4">
+                    <p className="text-[0.68rem] uppercase tracking-[0.26em] text-black/38">Skills needed</p>
+                    {skills.length > 0 ? (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {skills.map(skill => (
+                          <span key={skill} className="rounded-full border border-black/10 bg-white/88 px-3 py-1 text-xs font-medium text-black/58">
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="mt-3 text-sm text-black/48">Open to different backgrounds.</p>
+                    )}
+                  </div>
+                </div>
+
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="mb-1.5 block text-sm font-medium text-black/72">
                       Why do you want to join? <span className="text-red-500">*</span>
                     </label>
                     <textarea
                       name="message"
                       required
-                      rows={3}
+                      rows={4}
                       placeholder="What draws you to this project?"
-                      className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900"
+                      className="w-full rounded-[1.2rem] border border-black/12 bg-white px-4 py-3 text-sm text-black placeholder:text-black/34 focus:outline-none focus:ring-2 focus:ring-black"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="mb-1.5 block text-sm font-medium text-black/72">
                       What do you bring? <span className="text-red-500">*</span>
                     </label>
                     <textarea
                       name="what_i_bring"
                       required
-                      rows={3}
+                      rows={4}
                       placeholder="Your relevant skills, experience, or what you'll contribute"
-                      className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900"
+                      className="w-full rounded-[1.2rem] border border-black/12 bg-white px-4 py-3 text-sm text-black placeholder:text-black/34 focus:outline-none focus:ring-2 focus:ring-black"
                     />
                   </div>
 
                   {error && (
-                    <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2">
+                    <p className="rounded-[1.1rem] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
                       {error}
                     </p>
                   )}
 
-                  <div className="flex gap-3 pt-1">
+                  <div className="flex flex-col gap-3 pt-2 sm:flex-row">
                     <button
                       type="submit"
                       disabled={loading}
-                      className="flex-1 bg-gray-900 text-white py-2.5 rounded-lg text-sm hover:bg-gray-700 transition-colors disabled:opacity-50"
+                      className="flex-1 rounded-full border border-black bg-black py-3 text-sm font-medium text-white hover:-translate-y-0.5 hover:bg-black/85 disabled:opacity-50"
                     >
                       {loading ? 'Submitting...' : 'Submit application'}
                     </button>
                     <button
                       type="button"
                       onClick={() => setOpen(false)}
-                      className="px-5 py-2.5 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+                      className="rounded-full border border-black/12 bg-white px-5 py-3 text-sm font-medium text-black/62 hover:bg-black/[0.03]"
                     >
                       Cancel
                     </button>
