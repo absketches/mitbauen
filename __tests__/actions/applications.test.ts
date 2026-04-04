@@ -37,7 +37,7 @@ describe('applyToRole action', () => {
     fd.set('message', '')
     fd.set('what_i_bring', 'I bring skills')
     const result = await applyToRole('proj-1', 'role-1', fd)
-    expect(result?.error).toBeTruthy()
+    expect((result as any)?.error).toBeTruthy()
   })
 
   it('returns error if what_i_bring is empty', async () => {
@@ -46,7 +46,7 @@ describe('applyToRole action', () => {
     fd.set('message', 'I love this idea')
     fd.set('what_i_bring', '  ')
     const result = await applyToRole('proj-1', 'role-1', fd)
-    expect(result?.error).toBeTruthy()
+    expect((result as any)?.error).toBeTruthy()
   })
 
   it('returns error if user is not authenticated', async () => {
@@ -55,7 +55,7 @@ describe('applyToRole action', () => {
     fd.set('message', 'I love this idea')
     fd.set('what_i_bring', 'I bring skills')
     const result = await applyToRole('proj-1', 'role-1', fd)
-    expect(result?.error).toBe('Not authenticated.')
+    expect((result as any)?.error).toBe('Not authenticated.')
   })
 
   it('returns error if user already applied', async () => {
@@ -65,7 +65,7 @@ describe('applyToRole action', () => {
     fd.set('message', 'I love this idea')
     fd.set('what_i_bring', 'I bring skills')
     const result = await applyToRole('proj-1', 'role-1', fd)
-    expect(result?.error).toContain('already applied')
+    expect((result as any)?.error).toContain('already applied')
   })
 
   it('inserts application and returns success', async () => {
@@ -89,14 +89,14 @@ describe('respondToApplication action', () => {
   it('returns error if not authenticated', async () => {
     mockGetUser.mockResolvedValue({ data: { user: null } })
     const result = await respondToApplication('proj-1', 'app-1', 'accepted')
-    expect(result?.error).toBe('Not authenticated.')
+    expect((result as any)?.error).toBe('Not authenticated.')
   })
 
   it('returns error if user is not the project owner', async () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
     mockGetProjectOwnerId.mockResolvedValue('other-user')
     const result = await respondToApplication('proj-1', 'app-1', 'accepted')
-    expect(result?.error).toBe('Not authorised.')
+    expect((result as any)?.error).toBe('Not authorised.')
   })
 
   it('updates status to accepted for project owner', async () => {

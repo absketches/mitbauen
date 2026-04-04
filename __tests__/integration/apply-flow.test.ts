@@ -80,7 +80,7 @@ describe('applyToRole — integration', () => {
     await applyToRole(project.id, role.id, fd())
     const second = await applyToRole(project.id, role.id, fd())
 
-    expect(second?.error).toContain('already applied')
+    expect((second as any)?.error).toContain('already applied')
     // Still only one application in the store
     expect(db.tables.applications).toHaveLength(1)
   })
@@ -112,7 +112,7 @@ describe('applyToRole — integration', () => {
 
     const result = await applyToRole(project.id, role.id, fd)
 
-    expect(result?.error).toBe('Not authenticated.')
+    expect((result as any)?.error).toBe('Not authenticated.')
     expect(db.tables.applications).toHaveLength(0)
   })
 
@@ -169,7 +169,7 @@ describe('respondToApplication — integration', () => {
 
     const result = await respondToApplication(project.id, application.id, 'accepted')
 
-    expect(result?.error).toBe('Not authorised.')
+    expect((result as any)?.error).toBe('Not authorised.')
     // Status must remain unchanged
     const unchanged = db.tables.applications.find(a => a.id === application.id)
     expect(unchanged?.status).toBe('pending')
@@ -180,7 +180,7 @@ describe('respondToApplication — integration', () => {
 
     const result = await respondToApplication(project.id, application.id, 'accepted')
 
-    expect(result?.error).toBe('Not authorised.')
+    expect((result as any)?.error).toBe('Not authorised.')
   })
 
   it('unauthenticated user cannot respond', async () => {
@@ -188,7 +188,7 @@ describe('respondToApplication — integration', () => {
 
     const result = await respondToApplication(project.id, application.id, 'accepted')
 
-    expect(result?.error).toBe('Not authenticated.')
+    expect((result as any)?.error).toBe('Not authenticated.')
     const unchanged = db.tables.applications.find(a => a.id === application.id)
     expect(unchanged?.status).toBe('pending')
   })

@@ -4,7 +4,6 @@ import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { sendMessage as dbSendMessage, upsertReadReceipt } from '@/lib/db/messages'
 
-
 export async function sendMessage(applicationId: string, projectId: string, formData: FormData) {
   const body = (formData.get('body') as string)?.trim()
   if (!body) return { error: 'Message cannot be empty.' }

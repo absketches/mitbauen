@@ -1,3 +1,10 @@
+/**
+ * Data-access layer for projects.
+ *
+ * All joins that reference the `users` table MUST use explicit FK hints
+ * (e.g. `users!owner_id`, `users!user_id`). Without them, Supabase cannot
+ * resolve the ambiguous FK and silently returns `null` — no error is thrown.
+ */
 import { createClient } from '@/lib/supabase-server'
 
 export async function getProjectFeed() {

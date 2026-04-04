@@ -24,12 +24,11 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
   const isOwner = user?.id === project.owner_id
   const roleIds = (project.roles ?? []).map((r: any) => r.id)
 
-  // Applicant: own applications for this project's roles
+  // Applicant sees only their own applications; owner sees all.
   const myApplications = user && !isOwner
     ? await getApplicationsByUserForRoles(user.id, roleIds)
     : []
 
-  // Owner: all applications grouped by role
   const allApplications = isOwner ? await getApplicationsForRoles(roleIds) : []
   const rolesWithApplications = isOwner
     ? (project.roles ?? []).map((role: any) => ({
@@ -38,7 +37,9 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
       }))
     : []
 
-  // Thread data: messages + unread counts for relevant applications
+  // Load thread messages for whichever application IDs are relevant to this user.
+  // The result is keyed by applicationId and passed down to ApplicationThread /
+  // ApplicationsPanel so each thread renders with server-fetched initial state.
   const relevantAppIds = isOwner
     ? allApplications.map((a: any) => a.id)
     : myApplications.map((a: any) => a.id)

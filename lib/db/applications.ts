@@ -1,3 +1,14 @@
+/**
+ * Data-access layer for applications.
+ *
+ * FK hint rule: when joining `users`, always use the explicit hint
+ * (`users!applicant_id`, `users!owner_id`) — Supabase silently returns null
+ * when the FK is ambiguous.
+ *
+ * Deep nesting (projects → roles → applications) is done with three flat
+ * sequential queries instead of nested Supabase joins. Nested joins beyond
+ * two levels fail silently under RLS.
+ */
 import { createClient } from '@/lib/supabase-server'
 
 export async function getApplicationsByUserForRoles(userId: string, roleIds: string[]) {

@@ -1,7 +1,16 @@
+/**
+ * Notification count for the navbar bell icon.
+ *
+ * Three signals are combined into one number:
+ *   1. Unread messages in application threads (both roles)
+ *   2. Pending applications on roles the user owns
+ *   3. Unread comments on projects the user owns
+ *
+ * A single Supabase client is used throughout to avoid Next.js request-context
+ * conflicts. The whole function is wrapped in try/catch and returns 0 on error
+ * so a DB hiccup never breaks the layout render.
+ */
 import { createClient } from '@/lib/supabase-server'
-
-// Unified notification count for the bell icon. Uses a single Supabase client.
-// Returns 0 on any error so it never breaks the layout.
 export async function getNotificationCount(userId: string): Promise<number> {
   try {
     const supabase = await createClient()

@@ -1,3 +1,10 @@
+/**
+ * Data-access layer for application messages and read receipts.
+ *
+ * `users!sender_id` FK hint is required — see applications.ts for the rule.
+ * `computeUnreadCounts` is a pure function so it can be reused in both the
+ * project page (per-thread view) and the /messages inbox.
+ */
 import { createClient } from '@/lib/supabase-server'
 
 export type ThreadMessage = {
