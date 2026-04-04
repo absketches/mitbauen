@@ -28,20 +28,20 @@ export default function ApplicationThread({
   unreadCount,
 }: Props) {
   const router = useRouter()
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(
+    () => typeof window !== 'undefined' && window.location.hash === `#thread-${applicationId}`
+  )
   const containerRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
 
-  // Auto-open and scroll into view when URL hash targets this thread
+  // Scroll into view when URL hash targets this thread
   useEffect(() => {
-    if (window.location.hash === `#thread-${applicationId}`) {
-      setOpen(true)
-      // Small delay so the thread has time to render before scrolling
+    if (open && window.location.hash === `#thread-${applicationId}`) {
       setTimeout(() => {
         containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       }, 100)
     }
-  }, [applicationId])
+  }, [applicationId, open])
 
   // Mark as read when thread is opened, then refresh so the navbar badge drops
   useEffect(() => {

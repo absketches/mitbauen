@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase'
+import { createProject } from '@/app/actions/projects'
 
 type Role = {
   title: string
@@ -13,7 +13,6 @@ type Role = {
 
 export default function ProjectForm() {
   const router = useRouter()
-  const supabase = createClient()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -101,59 +100,30 @@ export default function ProjectForm() {
     setFieldErrors({})
     setLoading(true)
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      router.push('/login')
-      return
-    }
+    const result = await createProject({
+      ...form,
+      commitment_hours_pw: parseInt(form.commitment_hours_pw, 10),
+      roles,
+    })
 
-    // Create the project
-    const { data: project, error: projectError } = await supabase
-      .from('projects')
-      .insert({
-        owner_id: user.id,
-        title: form.title,
-        description: form.description,
-        why_it_matters: form.why_it_matters,
-        commitment_hours_pw: parseInt(form.commitment_hours_pw),
-        commitment_role: form.commitment_role,
-        commitment_description: form.commitment_description,
-        status: 'active',
-      })
-      .select()
-      .single()
-
-    if (projectError) {
-      setError(projectError.message)
+    if (result.error) {
+      if (result.error === 'Not authenticated.') {
+        router.push('/login')
+      } else {
+        setError(result.error)
+      }
       setLoading(false)
       return
     }
 
-    // Create the roles
-    const rolesWithProject = roles
-      .filter(r => r.title.trim())
-      .map(r => ({ ...r, project_id: project.id }))
-
-    if (rolesWithProject.length > 0) {
-      const { error: rolesError } = await supabase
-        .from('roles')
-        .insert(rolesWithProject)
-
-      if (rolesError) {
-        setError(rolesError.message)
-        setLoading(false)
-        return
-      }
-    }
-
-    router.push(`/projects/${project.id}`)
+    router.push(`/projects/${result.projectId}`)
   }
 
   return (
     <form onSubmit={handleSubmit} className="max-w-2xl mx-auto py-12 px-4 space-y-10">
       <div>
         <h1 className="text-3xl font-semibold text-gray-900">Post your idea</h1>
-        <p className="text-gray-500 mt-2">Tell people what you're building and what you're putting in.</p>
+        <p className="text-gray-500 mt-2">Tell people what you&apos;re building and what you&apos;re putting in.</p>
       </div>
 
       {error && (

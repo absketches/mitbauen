@@ -5,9 +5,10 @@ import { revalidatePath } from 'next/cache'
 import {
   getApplicationsByUserForRoles,
   createApplication,
+  getApplicationOwnershipContext,
+  getRoleApplicationContext,
   updateApplicationStatus,
 } from '@/lib/db/applications'
-import { getProjectOwnerId } from '@/lib/db/projects'
 
 export async function applyToRole(projectId: string, roleId: string, formData: FormData) {
   const message = (formData.get('message') as string)?.trim()
@@ -17,6 +18,17 @@ export async function applyToRole(projectId: string, roleId: string, formData: F
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Not authenticated.' }
+
+  const roleContext = await getRoleApplicationContext(roleId)
+  if (!roleContext || roleContext.projectId !== projectId) {
+    return { error: 'Role not found for this project.' }
+  }
+  if (roleContext.ownerId === user.id) {
+    return { error: 'You cannot apply to your own project.' }
+  }
+  if (roleContext.status !== 'open') {
+    return { error: 'This role is no longer open.' }
+  }
 
   const existing = await getApplicationsByUserForRoles(user.id, [roleId])
   if (existing.length > 0) return { error: 'You have already applied for this role.' }
@@ -37,8 +49,11 @@ export async function respondToApplication(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Not authenticated.' }
 
-  const ownerId = await getProjectOwnerId(projectId)
-  if (ownerId !== user.id) return { error: 'Not authorised.' }
+  const applicationContext = await getApplicationOwnershipContext(applicationId)
+  if (!applicationContext || applicationContext.projectId !== projectId) {
+    return { error: 'Application not found for this project.' }
+  }
+  if (applicationContext.ownerId !== user.id) return { error: 'Not authorised.' }
 
   const result = await updateApplicationStatus(applicationId, status)
   if (result.error) return result

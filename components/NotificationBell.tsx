@@ -5,60 +5,7 @@ import { useRouter } from 'next/navigation'
 import { markThreadRead } from '@/app/actions/messages'
 import { markCommentsRead } from '@/app/actions/comments'
 import type { NotificationItem } from '@/lib/db/notifications'
-
-// ─── Time formatting ──────────────────────────────────────────────────────────
-
-/**
- * Converts a UTC ISO timestamp to a human-readable local-timezone string.
- * Runs on the client so the browser's locale/timezone is used automatically.
- *
- * Examples (in user's local time):
- *   Today 14:35
- *   Yesterday 09:12
- *   Mon 08:00
- *   12 Jan 14:35
- */
-function formatLocalTime(utcIso: string): string {
-  const date = new Date(utcIso)           // browser converts UTC → local
-  const now  = new Date()
-
-  // Strip time component to compare calendar days
-  const startOfToday     = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const startOfYesterday = new Date(startOfToday.getTime() - 86_400_000)
-  const startOfDate      = new Date(date.getFullYear(), date.getMonth(), date.getDate())
-
-  const timeStr = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-
-  if (startOfDate.getTime() === startOfToday.getTime())
-    return `Today ${timeStr}`
-  if (startOfDate.getTime() === startOfYesterday.getTime())
-    return `Yesterday ${timeStr}`
-
-  const diffDays = Math.floor((startOfToday.getTime() - startOfDate.getTime()) / 86_400_000)
-  if (diffDays < 7) {
-    const dayName = date.toLocaleDateString('en-GB', { weekday: 'short' })
-    return `${dayName} ${timeStr}`
-  }
-
-  return (
-    date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + ` ${timeStr}`
-  )
-}
-
-// ─── Notification label ───────────────────────────────────────────────────────
-
-function notificationLabel(item: NotificationItem): string {
-  const actor = item.actorName ?? 'Someone'
-  const role  = item.roleTitle ? ` · ${item.roleTitle}` : ''
-  switch (item.type) {
-    case 'thread':
-      return `${actor} messaged you in ${item.projectTitle}${role}`
-    case 'new_application':
-      return `${actor} applied to ${item.roleTitle ?? 'a role'} in ${item.projectTitle}`
-    case 'comment':
-      return `${actor} commented on ${item.projectTitle}`
-  }
-}
+import { formatLocalTime, notificationLabel } from '@/lib/notifications-ui'
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────
 

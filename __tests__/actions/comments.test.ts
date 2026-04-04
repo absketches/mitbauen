@@ -1,9 +1,10 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const mockInsert = vi.fn()
-const mockGetUser = vi.fn()
-const mockRevalidatePath = vi.fn()
+const mockInsert              = vi.hoisted(() => vi.fn())
+const mockGetUser             = vi.hoisted(() => vi.fn())
+const mockRevalidatePath      = vi.hoisted(() => vi.fn())
+const mockMarkProjectComments = vi.hoisted(() => vi.fn())
 
 vi.mock('@/lib/supabase-server', () => ({
   createClient: vi.fn(() => ({
@@ -11,12 +12,10 @@ vi.mock('@/lib/supabase-server', () => ({
     from: vi.fn(() => ({ insert: mockInsert })),
   })),
 }))
+vi.mock('next/cache',            () => ({ revalidatePath: mockRevalidatePath }))
+vi.mock('@/lib/db/notifications', () => ({ markProjectCommentsRead: mockMarkProjectComments }))
 
-vi.mock('next/cache', () => ({
-  revalidatePath: mockRevalidatePath,
-}))
-
-const { addComment } = await import('@/app/actions/comments')
+const { addComment, markCommentsRead } = await import('@/app/actions/comments')
 
 describe('addComment action', () => {
   beforeEach(() => {
@@ -67,5 +66,27 @@ describe('addComment action', () => {
     expect(mockInsert).toHaveBeenCalledWith(
       expect.objectContaining({ body: 'trimmed' })
     )
+  })
+})
+
+// ─── markCommentsRead ─────────────────────────────────────────────────────────
+
+describe('markCommentsRead action', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('does nothing when user is not authenticated', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null } })
+    await markCommentsRead('project-1')
+    expect(mockMarkProjectComments).not.toHaveBeenCalled()
+    expect(mockRevalidatePath).not.toHaveBeenCalled()
+  })
+
+  it('marks comments read and revalidates layout when authenticated', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
+    mockMarkProjectComments.mockResolvedValue(undefined)
+    await markCommentsRead('project-1')
+    expect(mockMarkProjectComments).toHaveBeenCalledWith('project-1', 'user-1')
+    // Must bust layout cache so navbar badge re-renders
+    expect(mockRevalidatePath).toHaveBeenCalledWith('/', 'layout')
   })
 })

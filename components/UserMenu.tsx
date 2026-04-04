@@ -55,6 +55,13 @@ export default function UserMenu({ name, email, avatarUrl }: Props) {
           >
             Profile
           </Link>
+          <Link
+            href="/messages"
+            onClick={() => setOpen(false)}
+            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            Messages
+          </Link>
           <form action={signOut}>
             <button
               type="submit"

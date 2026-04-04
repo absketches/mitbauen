@@ -33,15 +33,26 @@ vi.mock('@/lib/db/applications',  () => ({ getApplicationsById: mockGetApplicati
  * Builds a chainable Supabase query mock that resolves with `data`.
  * Every method returns `this` so arbitrary chaining works.
  */
-function makeChain(data: any[]) {
-  const chain: any = {}
+type MockRow = Record<string, unknown>
+type QueryResult<T extends MockRow> = { data: T[]; error: null }
+type MockChain<T extends MockRow> = {
+  select: ReturnType<typeof vi.fn>
+  eq: ReturnType<typeof vi.fn>
+  in: ReturnType<typeof vi.fn>
+  neq: ReturnType<typeof vi.fn>
+  order: ReturnType<typeof vi.fn>
+  then: (resolve: (value: QueryResult<T>) => void) => void
+}
+
+function makeChain<T extends MockRow>(data: T[]): MockChain<T> {
+  const chain = {} as MockChain<T>
   const self = () => chain
   chain.select = vi.fn(self)
   chain.eq     = vi.fn(self)
   chain.in     = vi.fn(self)
   chain.neq    = vi.fn(self)
   chain.order  = vi.fn(self)
-  chain.then   = (resolve: (v: any) => void) => resolve({ data, error: null })
+  chain.then   = (resolve: (value: QueryResult<T>) => void) => resolve({ data, error: null })
   return chain
 }
 
@@ -52,7 +63,7 @@ function makeChain(data: any[]) {
  * The last entry is repeated when the call count exceeds the array length,
  * so tables called only once just need a single-element array.
  */
-function setupClient(tableSequences: Record<string, any[][]>) {
+function setupClient(tableSequences: Record<string, MockRow[][]>) {
   const callCounts: Record<string, number> = {}
   mockCreateClient.mockResolvedValue({
     from: vi.fn().mockImplementation((table: string) => {

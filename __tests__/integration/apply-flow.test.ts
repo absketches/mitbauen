@@ -13,6 +13,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { TestDatabase, createTestClient, seedUser, seedProject, seedRole } from '../helpers/in-memory-db'
 
+type UserRecord = { id: string; email: string; name?: string }
+type ProjectRecord = { id: string; owner_id: string }
+type RoleRecord = { id: string; project_id: string; title?: string; status: 'open' | 'filled' | 'closed' }
+type ApplicationRecord = { id: string; status: 'pending' | 'accepted' | 'rejected' }
+type ActionResult = { success?: boolean; error?: string }
+
 // Side-effect mocks (not DB-related)
 const mockRevalidatePath = vi.fn()
 vi.mock('next/cache', () => ({ revalidatePath: mockRevalidatePath }))
@@ -29,10 +35,10 @@ const { applyToRole, respondToApplication } = await import('@/app/actions/applic
 // ─── Shared state ─────────────────────────────────────────────────────────────
 
 const db = new TestDatabase()
-let owner: any
-let applicant: any
-let project: any
-let role: any
+let owner: UserRecord
+let applicant: UserRecord
+let project: ProjectRecord
+let role: RoleRecord
 
 beforeEach(() => {
   db.reset()
@@ -80,9 +86,51 @@ describe('applyToRole — integration', () => {
     await applyToRole(project.id, role.id, fd())
     const second = await applyToRole(project.id, role.id, fd())
 
-    expect((second as any)?.error).toContain('already applied')
+    expect((second as ActionResult)?.error).toContain('already applied')
     // Still only one application in the store
     expect(db.tables.applications).toHaveLength(1)
+  })
+
+  it('rejects applying to a role on another project', async () => {
+    const otherProject = seedProject(db, { id: 'other-project-id', owner_id: owner.id })
+    const otherRole = seedRole(db, { id: 'other-role-id', project_id: otherProject.id })
+    testClient = createTestClient(db, applicant.id)
+
+    const fd = new FormData()
+    fd.set('message', 'I love this idea')
+    fd.set('what_i_bring', 'I bring React skills')
+
+    const result = await applyToRole(project.id, otherRole.id, fd)
+
+    expect((result as ActionResult)?.error).toBe('Role not found for this project.')
+    expect(db.tables.applications).toHaveLength(0)
+  })
+
+  it('rejects owners applying to their own project', async () => {
+    testClient = createTestClient(db, owner.id)
+
+    const fd = new FormData()
+    fd.set('message', 'I love this idea')
+    fd.set('what_i_bring', 'I bring React skills')
+
+    const result = await applyToRole(project.id, role.id, fd)
+
+    expect((result as ActionResult)?.error).toBe('You cannot apply to your own project.')
+    expect(db.tables.applications).toHaveLength(0)
+  })
+
+  it('rejects applying to a closed role', async () => {
+    role.status = 'closed'
+    testClient = createTestClient(db, applicant.id)
+
+    const fd = new FormData()
+    fd.set('message', 'I love this idea')
+    fd.set('what_i_bring', 'I bring React skills')
+
+    const result = await applyToRole(project.id, role.id, fd)
+
+    expect((result as ActionResult)?.error).toBe('This role is no longer open.')
+    expect(db.tables.applications).toHaveLength(0)
   })
 
   it('allows the same user to apply to a different role on the same project', async () => {
@@ -112,7 +160,7 @@ describe('applyToRole — integration', () => {
 
     const result = await applyToRole(project.id, role.id, fd)
 
-    expect((result as any)?.error).toBe('Not authenticated.')
+    expect((result as ActionResult)?.error).toBe('Not authenticated.')
     expect(db.tables.applications).toHaveLength(0)
   })
 
@@ -131,7 +179,7 @@ describe('applyToRole — integration', () => {
 // ─── respondToApplication ─────────────────────────────────────────────────────
 
 describe('respondToApplication — integration', () => {
-  let application: any
+  let application: ApplicationRecord
 
   beforeEach(async () => {
     // Seed an existing application
@@ -169,7 +217,7 @@ describe('respondToApplication — integration', () => {
 
     const result = await respondToApplication(project.id, application.id, 'accepted')
 
-    expect((result as any)?.error).toBe('Not authorised.')
+    expect((result as ActionResult)?.error).toBe('Not authorised.')
     // Status must remain unchanged
     const unchanged = db.tables.applications.find(a => a.id === application.id)
     expect(unchanged?.status).toBe('pending')
@@ -180,7 +228,7 @@ describe('respondToApplication — integration', () => {
 
     const result = await respondToApplication(project.id, application.id, 'accepted')
 
-    expect((result as any)?.error).toBe('Not authorised.')
+    expect((result as ActionResult)?.error).toBe('Not authorised.')
   })
 
   it('unauthenticated user cannot respond', async () => {
@@ -188,7 +236,18 @@ describe('respondToApplication — integration', () => {
 
     const result = await respondToApplication(project.id, application.id, 'accepted')
 
-    expect((result as any)?.error).toBe('Not authenticated.')
+    expect((result as ActionResult)?.error).toBe('Not authenticated.')
+    const unchanged = db.tables.applications.find(a => a.id === application.id)
+    expect(unchanged?.status).toBe('pending')
+  })
+
+  it('rejects responding when the application does not belong to the given project', async () => {
+    const otherProject = seedProject(db, { id: 'other-project-id', owner_id: owner.id })
+    testClient = createTestClient(db, owner.id)
+
+    const result = await respondToApplication(otherProject.id, application.id, 'accepted')
+
+    expect((result as ActionResult)?.error).toBe('Application not found for this project.')
     const unchanged = db.tables.applications.find(a => a.id === application.id)
     expect(unchanged?.status).toBe('pending')
   })

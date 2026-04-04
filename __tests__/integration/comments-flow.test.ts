@@ -7,6 +7,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { TestDatabase, createTestClient, seedUser, seedProject } from '../helpers/in-memory-db'
 
+type UserRecord = { id: string }
+type ProjectRecord = { id: string; owner_id: string }
+type CommentRecord = { body: string; user_id: string }
+
 const mockRevalidatePath = vi.fn()
 vi.mock('next/cache', () => ({ revalidatePath: mockRevalidatePath }))
 
@@ -18,8 +22,8 @@ vi.mock('@/lib/supabase-server', () => ({
 const { addComment } = await import('@/app/actions/comments')
 
 const db = new TestDatabase()
-let user: any
-let project: any
+let user: UserRecord
+let project: ProjectRecord
 
 beforeEach(() => {
   db.reset()
@@ -54,7 +58,7 @@ describe('addComment — integration', () => {
     }
 
     expect(db.tables.comments).toHaveLength(3)
-    expect(db.tables.comments.map((c: any) => c.body)).toEqual([
+    expect(db.tables.comments.map((comment: CommentRecord) => comment.body)).toEqual([
       'First comment', 'Second comment', 'Third comment',
     ])
   })

@@ -15,11 +15,10 @@ export default defineConfig({
       include: [
         'app/actions/**',
         'components/**',
+        'lib/**',
         'proxy.ts',
       ],
-      exclude: [
-        'components/SignOutButton.tsx', // legacy, superseded by server action
-      ],
+      exclude: [],
     },
   },
   resolve: {

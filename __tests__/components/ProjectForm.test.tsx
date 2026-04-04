@@ -2,19 +2,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
+const mockRouterPush = vi.hoisted(() => vi.fn())
+const mockCreateProject = vi.hoisted(() => vi.fn())
+
 vi.mock('next/navigation', () => ({
-  useRouter: vi.fn(() => ({ push: vi.fn() })),
+  useRouter: vi.fn(() => ({ push: mockRouterPush })),
 }))
 
-vi.mock('@/lib/supabase', () => ({
-  createClient: vi.fn(() => ({
-    auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }) },
-    from: vi.fn(() => ({
-      insert: vi.fn().mockResolvedValue({ data: { id: 'new-project' }, error: null }),
-      select: vi.fn().mockReturnThis(),
-      single: vi.fn().mockResolvedValue({ data: { id: 'new-project' }, error: null }),
-    })),
-  })),
+vi.mock('@/app/actions/projects', () => ({
+  createProject: mockCreateProject,
 }))
 
 const { default: ProjectForm } = await import('@/components/projects/ProjectForm')
@@ -22,6 +18,7 @@ const { default: ProjectForm } = await import('@/components/projects/ProjectForm
 describe('ProjectForm validation', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockCreateProject.mockResolvedValue({ success: true, projectId: 'new-project' })
   })
 
   it('renders the form', () => {
@@ -73,12 +70,10 @@ describe('ProjectForm validation', () => {
   })
 
   it('does not submit if validation fails', async () => {
-    const { createClient } = await import('@/lib/supabase')
     render(<ProjectForm />)
     await userEvent.type(screen.getByPlaceholderText(/A platform for local food/), 'Hi') // too short
     fireEvent.submit(screen.getByRole('button', { name: /Post your idea/ }))
-    // createClient().from().insert should not be called
-    expect(createClient().from).not.toHaveBeenCalled()
+    expect(mockCreateProject).not.toHaveBeenCalled()
   })
 
   it('has a Cancel link pointing to /projects', () => {

@@ -58,6 +58,35 @@ type MsgRow    = { application_id: string; sender_id: string; created_at: string
 type MsgRead   = { application_id: string; last_read_at: string }
 type CommentRow = { project_id: string; created_at: string }
 type CommentRead = { project_id: string; last_read_at: string }
+type IdRow = { id: string }
+type PendingApplicationRow = { id: string; created_at: string; message: string | null }
+type JoinedUser =
+  | { name: string | null; avatar_url: string | null }
+  | Array<{ name: string | null; avatar_url: string | null }>
+  | null
+type ThreadMessageRow = {
+  id: string
+  application_id: string
+  body: string
+  created_at: string
+  sender_id: string
+  users: JoinedUser
+}
+type OwnCommentProjectRow = { project_id: string }
+type ProjectTitleRow = { id: string; title: string }
+type CommentNotificationRow = {
+  id: string
+  project_id: string
+  body: string
+  created_at: string
+  user_id: string
+  users: JoinedUser
+}
+
+function extractJoinedUser(user: JoinedUser) {
+  if (Array.isArray(user)) return user[0] ?? null
+  return user
+}
 
 /**
  * Count unread thread messages from others (own messages are excluded).
@@ -111,19 +140,19 @@ export async function getNotifications(userId: string): Promise<NotificationItem
     supabase.from('projects').select('id').eq('owner_id', userId),
   ])
 
-  const applicantAppIds = (myApps ?? []).map((a: any) => a.id as string)
-  const ownedProjectIds = (ownedProjects ?? []).map((p: any) => p.id as string)
+  const applicantAppIds = ((myApps ?? []) as IdRow[]).map(application => application.id)
+  const ownedProjectIds = ((ownedProjects ?? []) as IdRow[]).map(project => project.id)
 
   // Owner path: projects → roles → applications (three flat queries)
   let ownerAppIds: string[] = []
   if (ownedProjectIds.length > 0) {
     const { data: roles } = await supabase
       .from('roles').select('id').in('project_id', ownedProjectIds)
-    const roleIds = (roles ?? []).map((r: any) => r.id as string)
+    const roleIds = ((roles ?? []) as IdRow[]).map(role => role.id)
     if (roleIds.length > 0) {
       const { data: apps } = await supabase
         .from('applications').select('id').in('role_id', roleIds)
-      ownerAppIds = (apps ?? []).map((a: any) => a.id as string)
+      ownerAppIds = ((apps ?? []) as IdRow[]).map(application => application.id)
     }
   }
 
@@ -151,11 +180,13 @@ export async function getNotifications(userId: string): Promise<NotificationItem
         .in('application_id', allAppIds),
     ])
 
-    const readMap = new Map((reads ?? []).map((r: any) => [r.application_id, r.last_read_at]))
+    const readMap = new Map(
+      ((reads ?? []) as MsgRead[]).map(read => [read.application_id, read.last_read_at] as const)
+    )
 
     // Collapse all unread messages per thread into one item (latest message shown)
-    const threadLatest = new Map<string, { msg: any; count: number }>()
-    for (const msg of (msgs ?? []) as any[]) {
+    const threadLatest = new Map<string, { msg: ThreadMessageRow; count: number }>()
+    for (const msg of (msgs ?? []) as ThreadMessageRow[]) {
       if (msg.sender_id === userId) continue   // never notify on own messages
       const lastRead = readMap.get(msg.application_id)
       if (lastRead && new Date(msg.created_at) <= new Date(lastRead)) continue
@@ -201,7 +232,7 @@ export async function getNotifications(userId: string): Promise<NotificationItem
       .eq('status', 'pending')
       .in('id', ownerAppIds)
 
-    for (const app of (pending ?? []) as any[]) {
+    for (const app of (pending ?? []) as PendingApplicationRow[]) {
       const appRow = appMap.get(app.id)
       if (!appRow) continue
       items.push({
@@ -212,7 +243,7 @@ export async function getNotifications(userId: string): Promise<NotificationItem
         roleTitle: appRow.role_title,
         actorName:   appRow.applicant_name,
         actorAvatar: appRow.applicant_avatar,
-        latestBody: app.message,
+        latestBody: app.message ?? '',
         latestAt: app.created_at,
         unreadCount: 1,
         link: `/projects/${appRow.project_id}`,
@@ -230,7 +261,9 @@ export async function getNotifications(userId: string): Promise<NotificationItem
 
   const { data: myComments } = await supabase
     .from('comments').select('project_id').eq('user_id', userId)
-  const commentedProjectIds = (myComments ?? []).map((c: any) => c.project_id as string)
+  const commentedProjectIds = ((myComments ?? []) as OwnCommentProjectRow[]).map(
+    comment => comment.project_id
+  )
 
   const watchedProjectIds = [...new Set([
     ...ownedProjectIds,
@@ -257,12 +290,16 @@ export async function getNotifications(userId: string): Promise<NotificationItem
         .in('id', watchedProjectIds),
     ])
 
-    const commentReadMap  = new Map((commentReads ?? []).map((r: any) => [r.project_id, r.last_read_at]))
-    const projectTitleMap = new Map((projectRows  ?? []).map((p: any) => [p.id, p.title as string]))
+    const commentReadMap = new Map(
+      ((commentReads ?? []) as CommentRead[]).map(read => [read.project_id, read.last_read_at] as const)
+    )
+    const projectTitleMap = new Map(
+      ((projectRows ?? []) as ProjectTitleRow[]).map(project => [project.id, project.title] as const)
+    )
 
     // Collapse all unread comments per project into one item (latest shown)
-    const projectLatest = new Map<string, { comment: any; count: number }>()
-    for (const comment of (comments ?? []) as any[]) {
+    const projectLatest = new Map<string, { comment: CommentNotificationRow; count: number }>()
+    for (const comment of (comments ?? []) as CommentNotificationRow[]) {
       const lastRead = commentReadMap.get(comment.project_id)
       if (lastRead && new Date(comment.created_at) <= new Date(lastRead)) continue
 
@@ -282,8 +319,8 @@ export async function getNotifications(userId: string): Promise<NotificationItem
         projectId,
         projectTitle: projectTitleMap.get(projectId) ?? 'Unknown project',
         roleTitle: null,
-        actorName:   comment.users?.name ?? null,
-        actorAvatar: comment.users?.avatar_url ?? null,
+        actorName: extractJoinedUser(comment.users)?.name ?? null,
+        actorAvatar: extractJoinedUser(comment.users)?.avatar_url ?? null,
         latestBody: comment.body,
         latestAt: comment.created_at,
         unreadCount: count,

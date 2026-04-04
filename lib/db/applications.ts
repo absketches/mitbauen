@@ -11,7 +11,72 @@
  */
 import { createClient } from '@/lib/supabase-server'
 
-export async function getApplicationsByUserForRoles(userId: string, roleIds: string[]) {
+export type RoleApplicationContext = {
+  roleId: string
+  projectId: string
+  ownerId: string
+  status: 'open' | 'filled' | 'closed'
+}
+
+export type ApplicationOwnershipContext = {
+  applicationId: string
+  projectId: string
+  ownerId: string
+}
+
+export type UserRoleApplication = {
+  id: string
+  role_id: string
+}
+
+export type RoleApplication = {
+  id: string
+  message: string
+  what_i_bring: string
+  status: 'pending' | 'accepted' | 'rejected'
+  role_id: string
+  users: { name: string | null; avatar_url: string | null } | null
+}
+
+type JoinedUser =
+  | { name: string | null; avatar_url: string | null }
+  | Array<{ name: string | null; avatar_url: string | null }>
+  | null
+
+type ApplicationIdRow = { id: string }
+type ProjectIdRow = { id: string }
+type RoleIdRow = { id: string }
+type RoleWithProjectRow = { id: string; title: string; project_id: string }
+type ProjectWithOwnerRow = {
+  id: string
+  title: string
+  owner_id: string
+  users: JoinedUser
+}
+type RoleApplicationRow = {
+  id: string
+  message: string
+  what_i_bring: string
+  status: 'pending' | 'accepted' | 'rejected'
+  role_id: string
+  users: JoinedUser
+}
+type ApplicationWithApplicantRow = {
+  id: string
+  applicant_id: string
+  role_id: string
+  users: JoinedUser
+}
+
+function extractJoinedUser(user: JoinedUser) {
+  if (Array.isArray(user)) return user[0] ?? null
+  return user
+}
+
+export async function getApplicationsByUserForRoles(
+  userId: string,
+  roleIds: string[]
+): Promise<UserRoleApplication[]> {
   if (!roleIds.length) return []
   const supabase = await createClient()
   const { data } = await supabase
@@ -19,10 +84,75 @@ export async function getApplicationsByUserForRoles(userId: string, roleIds: str
     .select('id, role_id')
     .eq('applicant_id', userId)
     .in('role_id', roleIds)
-  return data ?? []
+  return (data ?? []) as UserRoleApplication[]
 }
 
-export async function getApplicationsForRoles(roleIds: string[]) {
+export async function getRoleApplicationContext(
+  roleId: string
+): Promise<RoleApplicationContext | null> {
+  const supabase = await createClient()
+  const { data: role, error } = await supabase
+    .from('roles')
+    .select('id, project_id, status')
+    .eq('id', roleId)
+    .single()
+  if (error) console.error('[getRoleApplicationContext]', error.message)
+
+  if (!role) return null
+
+  const { data: project, error: projectError } = await supabase
+    .from('projects')
+    .select('owner_id')
+    .eq('id', role.project_id)
+    .single()
+  if (projectError) console.error('[getRoleApplicationContext:project]', projectError.message)
+  if (!project?.owner_id) return null
+
+  return {
+    roleId: role.id,
+    projectId: role.project_id,
+    ownerId: project.owner_id,
+    status: role.status,
+  }
+}
+
+export async function getApplicationOwnershipContext(
+  applicationId: string
+): Promise<ApplicationOwnershipContext | null> {
+  const supabase = await createClient()
+  const { data: application, error } = await supabase
+    .from('applications')
+    .select('id, role_id')
+    .eq('id', applicationId)
+    .single()
+  if (error) console.error('[getApplicationOwnershipContext]', error.message)
+
+  if (!application) return null
+
+  const { data: role, error: roleError } = await supabase
+    .from('roles')
+    .select('project_id')
+    .eq('id', application.role_id)
+    .single()
+  if (roleError) console.error('[getApplicationOwnershipContext:role]', roleError.message)
+  if (!role?.project_id) return null
+
+  const { data: project, error: projectError } = await supabase
+    .from('projects')
+    .select('owner_id')
+    .eq('id', role.project_id)
+    .single()
+  if (projectError) console.error('[getApplicationOwnershipContext:project]', projectError.message)
+  if (!project?.owner_id) return null
+
+  return {
+    applicationId: application.id,
+    projectId: role.project_id,
+    ownerId: project.owner_id,
+  }
+}
+
+export async function getApplicationsForRoles(roleIds: string[]): Promise<RoleApplication[]> {
   if (!roleIds.length) return []
   const supabase = await createClient()
   const { data } = await supabase
@@ -30,7 +160,14 @@ export async function getApplicationsForRoles(roleIds: string[]) {
     .select('id, message, what_i_bring, status, role_id, users!applicant_id (name, avatar_url)')
     .in('role_id', roleIds)
     .order('created_at', { ascending: true })
-  return data ?? []
+  return ((data ?? []) as RoleApplicationRow[]).map(application => ({
+    id: application.id,
+    message: application.message,
+    what_i_bring: application.what_i_bring,
+    status: application.status,
+    role_id: application.role_id,
+    users: extractJoinedUser(application.users),
+  }))
 }
 
 // Returns application IDs where the user is the applicant (flat query)
@@ -40,7 +177,7 @@ export async function getApplicationIdsByApplicant(userId: string): Promise<stri
     .from('applications')
     .select('id')
     .eq('applicant_id', userId)
-  return (data ?? []).map((a: any) => a.id)
+  return ((data ?? []) as ApplicationIdRow[]).map(application => application.id)
 }
 
 // Returns application IDs for all projects owned by userId (three flat queries, no nesting)
@@ -56,14 +193,14 @@ export async function getApplicationIdsByOwner(userId: string): Promise<string[]
   const { data: roles } = await supabase
     .from('roles')
     .select('id')
-    .in('project_id', projects.map((p: any) => p.id))
+    .in('project_id', (projects as ProjectIdRow[]).map(project => project.id))
   if (!roles?.length) return []
 
   const { data: apps } = await supabase
     .from('applications')
     .select('id')
-    .in('role_id', roles.map((r: any) => r.id))
-  return (apps ?? []).map((a: any) => a.id)
+    .in('role_id', (roles as RoleIdRow[]).map(role => role.id))
+  return ((apps ?? []) as ApplicationIdRow[]).map(application => application.id)
 }
 
 export type ApplicationInboxRow = {
@@ -97,7 +234,8 @@ export async function getApplicationsById(
   if (!apps?.length) return []
 
   // Step 2: fetch roles
-  const roleIds = [...new Set(apps.map((a: any) => a.role_id))]
+  const appRows = apps as ApplicationWithApplicantRow[]
+  const roleIds = [...new Set(appRows.map(application => application.role_id))]
   const { data: roles, error: rolesError } = await supabase
     .from('roles')
     .select('id, title, project_id')
@@ -105,7 +243,8 @@ export async function getApplicationsById(
   if (rolesError) console.error('[getApplicationsById:roles]', rolesError.message)
 
   // Step 3: fetch projects + owner profile
-  const projectIds = [...new Set((roles ?? []).map((r: any) => r.project_id))]
+  const roleRows = (roles ?? []) as RoleWithProjectRow[]
+  const projectIds = [...new Set(roleRows.map(role => role.project_id))]
   const { data: projects, error: projectsError } = await supabase
     .from('projects')
     .select('id, title, owner_id, users!owner_id (name, avatar_url)')
@@ -113,24 +252,25 @@ export async function getApplicationsById(
   if (projectsError) console.error('[getApplicationsById:projects]', projectsError.message)
 
   // Build lookup maps
-  const roleMap = new Map((roles ?? []).map((r: any) => [r.id, r]))
-  const projectMap = new Map((projects ?? []).map((p: any) => [p.id, p]))
+  const projectRows = (projects ?? []) as ProjectWithOwnerRow[]
+  const roleMap = new Map(roleRows.map(role => [role.id, role]))
+  const projectMap = new Map(projectRows.map(project => [project.id, project]))
 
-  return apps.map((app: any) => {
-    const role = roleMap.get(app.role_id)
+  return appRows.map(application => {
+    const role = roleMap.get(application.role_id)
     const project = role ? projectMap.get(role.project_id) : null
     return {
-      id: app.id,
-      applicant_id: app.applicant_id,
-      role_id: app.role_id,
+      id: application.id,
+      applicant_id: application.applicant_id,
+      role_id: application.role_id,
       role_title: role?.title ?? 'Unknown role',
       project_id: project?.id ?? '',
       project_title: project?.title ?? 'Unknown project',
       project_owner_id: project?.owner_id ?? '',
-      applicant_name: app.users?.name ?? null,
-      applicant_avatar: app.users?.avatar_url ?? null,
-      owner_name: project?.users?.name ?? null,
-      owner_avatar: project?.users?.avatar_url ?? null,
+      applicant_name: extractJoinedUser(application.users)?.name ?? null,
+      applicant_avatar: extractJoinedUser(application.users)?.avatar_url ?? null,
+      owner_name: extractJoinedUser(project?.users ?? null)?.name ?? null,
+      owner_avatar: extractJoinedUser(project?.users ?? null)?.avatar_url ?? null,
     }
   })
 }

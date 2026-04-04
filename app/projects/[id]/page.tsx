@@ -1,9 +1,23 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase-server'
-import { getProjectById } from '@/lib/db/projects'
-import { getApplicationsByUserForRoles, getApplicationsForRoles } from '@/lib/db/applications'
-import { getMessages, getReadReceipts, computeUnreadCounts } from '@/lib/db/messages'
+import {
+  getProjectById,
+  type ProjectComment,
+  type ProjectRole,
+} from '@/lib/db/projects'
+import {
+  getApplicationsByUserForRoles,
+  getApplicationsForRoles,
+  type RoleApplication,
+  type UserRoleApplication,
+} from '@/lib/db/applications'
+import {
+  getMessages,
+  getReadReceipts,
+  computeUnreadCounts,
+  type ThreadMessage,
+} from '@/lib/db/messages'
 import { addComment } from '@/app/actions/comments'
 import ApplyModal from '@/components/projects/ApplyModal'
 import ApplicationsPanel from '@/components/projects/ApplicationsPanel'
@@ -22,18 +36,18 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
   if (!project) notFound()
 
   const isOwner = user?.id === project.owner_id
-  const roleIds = (project.roles ?? []).map((r: any) => r.id)
+  const roleIds = project.roles.map((role: ProjectRole) => role.id)
 
   // Applicant sees only their own applications; owner sees all.
-  const myApplications = user && !isOwner
+  const myApplications: UserRoleApplication[] = user && !isOwner
     ? await getApplicationsByUserForRoles(user.id, roleIds)
     : []
 
-  const allApplications = isOwner ? await getApplicationsForRoles(roleIds) : []
+  const allApplications: RoleApplication[] = isOwner ? await getApplicationsForRoles(roleIds) : []
   const rolesWithApplications = isOwner
-    ? (project.roles ?? []).map((role: any) => ({
+    ? project.roles.map((role: ProjectRole) => ({
         ...role,
-        applications: allApplications.filter((a: any) => a.role_id === role.id),
+        applications: allApplications.filter(application => application.role_id === role.id),
       }))
     : []
 
@@ -41,10 +55,10 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
   // The result is keyed by applicationId and passed down to ApplicationThread /
   // ApplicationsPanel so each thread renders with server-fetched initial state.
   const relevantAppIds = isOwner
-    ? allApplications.map((a: any) => a.id)
-    : myApplications.map((a: any) => a.id)
+    ? allApplications.map(application => application.id)
+    : myApplications.map(application => application.id)
 
-  let threadsData: Record<string, { messages: any[]; unreadCount: number }> = {}
+  const threadsData: Record<string, { messages: ThreadMessage[]; unreadCount: number }> = {}
   if (user && relevantAppIds.length > 0) {
     const [messages, reads] = await Promise.all([
       getMessages(relevantAppIds),
@@ -52,7 +66,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
     ])
     const unreadCounts = computeUnreadCounts(messages, reads, user.id, relevantAppIds)
     // Group messages by application_id
-    const messagesByApp: Record<string, any[]> = {}
+    const messagesByApp: Record<string, ThreadMessage[]> = {}
     for (const msg of messages) {
       if (!messagesByApp[msg.application_id]) messagesByApp[msg.application_id] = []
       messagesByApp[msg.application_id].push(msg)
@@ -65,12 +79,15 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
     }
   }
 
-  const roleToApplication = new Map(myApplications.map((a: any) => [a.role_id, a]))
-  const appliedRoleIds = new Set(myApplications.map((a: any) => a.role_id))
-  const openRoles = (project.roles ?? []).filter((r: any) => r.status === 'open')
+  const roleToApplication = new Map(
+    myApplications.map(application => [application.role_id, application] as const)
+  )
+  const appliedRoleIds = new Set(myApplications.map(application => application.role_id))
+  const openRoles = project.roles.filter((role: ProjectRole) => role.status === 'open')
   const voteCount = project.votes?.length ?? 0
-  const comments = [...(project.comments ?? [])].sort(
-    (a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  const comments = [...project.comments].sort(
+    (a: ProjectComment, b: ProjectComment) =>
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
   )
 
   return (
@@ -125,8 +142,9 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
             Open roles <span className="text-gray-400 font-normal text-base">({openRoles.length})</span>
           </h2>
           <div className="space-y-3">
-            {openRoles.map((role: any) => {
+            {openRoles.map((role: ProjectRole) => {
               const myApp = roleToApplication.get(role.id)
+              const skillsNeeded = role.skills_needed ?? []
               return (
                 <div key={role.id} className="border border-gray-200 rounded-xl p-5">
                   <div className="flex items-start justify-between gap-4">
@@ -135,9 +153,9 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                       {role.description && (
                         <p className="text-sm text-gray-500 mt-1">{role.description}</p>
                       )}
-                      {role.skills_needed?.length > 0 && (
+                      {skillsNeeded.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mt-3">
-                          {role.skills_needed.map((skill: string) => (
+                          {skillsNeeded.map((skill: string) => (
                             <span key={skill} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md">
                               {skill}
                             </span>
@@ -195,7 +213,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
           <p className="text-gray-400 text-sm mb-6">No comments yet.</p>
         ) : (
           <div className="max-h-96 overflow-y-auto space-y-4 mb-6 pr-2">
-            {comments.map((comment: any) => (
+            {comments.map((comment: ProjectComment) => (
               <div key={comment.id} className="flex gap-3">
                 <div className="w-7 h-7 rounded-full bg-gray-200 shrink-0 overflow-hidden flex items-center justify-center text-xs font-medium text-gray-600">
                   {comment.users?.avatar_url

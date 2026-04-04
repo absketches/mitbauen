@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { getProjectFeed } from '@/lib/db/projects'
+import { getProjectFeed, type ProjectFeedItem, type ProjectRoleSummary } from '@/lib/db/projects'
 
 export default async function ProjectsPage() {
   const projects = await getProjectFeed()
@@ -17,8 +17,10 @@ export default async function ProjectsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {projects.map((project: any) => {
-            const openRoles = project.roles?.filter((r: any) => r.status === 'open') ?? []
+          {projects.map((project: ProjectFeedItem) => {
+            const openRoles = project.roles?.filter(
+              (role: ProjectRoleSummary) => role.status === 'open'
+            ) ?? []
             const voteCount = project.votes?.length ?? 0
 
             return (
