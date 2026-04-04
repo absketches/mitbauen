@@ -164,6 +164,7 @@ export async function getApplicationsForRoles(roleIds: string[]): Promise<RoleAp
     .order('created_at', { ascending: true })
   return ((data ?? []) as RoleApplicationRow[]).map(application => ({
     id: application.id,
+    applicant_id: application.applicant_id,
     message: application.message,
     what_i_bring: application.what_i_bring,
     status: application.status,
