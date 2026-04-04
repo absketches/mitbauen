@@ -95,9 +95,19 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-[clamp(2.75rem,7vw,4.5rem)] sm:px-6 lg:px-8">
-      <Link href="/projects" className="mb-8 inline-flex items-center rounded-full border border-black/10 bg-white/85 px-4 py-2 text-sm text-black/58 shadow-[0_10px_28px_rgba(0,0,0,0.04)] hover:bg-white hover:text-black">
-        ← Back to ideas
-      </Link>
+      <div className="mb-8 flex items-center justify-between gap-4">
+        <Link href="/projects" className="inline-flex items-center rounded-full border border-black/10 bg-white/85 px-4 py-2 text-sm text-black/58 shadow-[0_10px_28px_rgba(0,0,0,0.04)] hover:bg-white hover:text-black">
+          ← Back to ideas
+        </Link>
+        {isOwner && (
+          <Link
+            href={`/projects/${project.id}/edit`}
+            className="inline-flex items-center rounded-full border border-black/12 bg-white/85 px-4 py-2 text-sm font-medium text-black/60 shadow-[0_10px_28px_rgba(0,0,0,0.04)] hover:bg-white hover:text-black"
+          >
+            Edit project
+          </Link>
+        )}
+      </div>
 
       <div className="grid gap-8 lg:grid-cols-[1.35fr_0.9fr] lg:items-start">
         <div className="rounded-[2rem] border border-black/10 bg-white/92 p-6 shadow-[0_28px_90px_rgba(0,0,0,0.06)] sm:p-8">

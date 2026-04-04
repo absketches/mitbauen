@@ -39,6 +39,7 @@ export async function proxy(request: NextRequest) {
   const isProtected =
     pathname === '/profile' ||
     pathname.startsWith('/projects/new') ||
+    pathname.endsWith('/edit') ||
     pathname.startsWith('/messages')
 
   // Redirect unauthenticated users away from protected routes

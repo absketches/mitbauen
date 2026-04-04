@@ -70,3 +70,90 @@ export async function createProject(input: CreateProjectInput) {
   revalidatePath('/projects')
   return { success: true, projectId: data as string }
 }
+
+export type UpdateProjectInput = {
+  title: string
+  description: string
+  why_it_matters: string
+  commitment_hours_pw: number
+  commitment_role: string
+  commitment_description: string
+}
+
+export async function updateProject(
+  projectId: string,
+  input: UpdateProjectInput
+): Promise<{ error: string } | { success: true }> {
+  const title = input.title.trim()
+  const description = input.description.trim()
+  const whyItMatters = input.why_it_matters.trim()
+  const commitmentRole = input.commitment_role.trim()
+  const commitmentDescription = input.commitment_description.trim()
+
+  if (title.length < 5 || title.length > 120)
+    return { error: 'Title must be between 5 and 120 characters.' }
+  if (description.length < 30)
+    return { error: 'Description must be at least 30 characters.' }
+  if (commitmentRole.length < 3 || commitmentRole.length > 80)
+    return { error: 'Commitment role must be between 3 and 80 characters.' }
+  if (!Number.isInteger(input.commitment_hours_pw) || input.commitment_hours_pw < 1 || input.commitment_hours_pw > 80)
+    return { error: 'Commitment hours must be between 1 and 80.' }
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated.' }
+
+  // Verify ownership before updating
+  const { data: existing } = await supabase
+    .from('projects')
+    .select('owner_id')
+    .eq('id', projectId)
+    .single()
+  if (!existing) return { error: 'Project not found.' }
+  if (existing.owner_id !== user.id) return { error: 'Not authorised.' }
+
+  const { error } = await supabase
+    .from('projects')
+    .update({
+      title,
+      description,
+      why_it_matters: whyItMatters || null,
+      commitment_hours_pw: input.commitment_hours_pw,
+      commitment_role: commitmentRole,
+      commitment_description: commitmentDescription || null,
+    })
+    .eq('id', projectId)
+
+  if (error) return { error: error.message }
+
+  revalidatePath('/projects')
+  revalidatePath(`/projects/${projectId}`)
+  return { success: true }
+}
+
+export async function deleteProject(
+  projectId: string
+): Promise<{ error: string } | { success: true }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated.' }
+
+  // Verify ownership before deleting
+  const { data: existing } = await supabase
+    .from('projects')
+    .select('owner_id')
+    .eq('id', projectId)
+    .single()
+  if (!existing) return { error: 'Project not found.' }
+  if (existing.owner_id !== user.id) return { error: 'Not authorised.' }
+
+  const { error } = await supabase
+    .from('projects')
+    .delete()
+    .eq('id', projectId)
+
+  if (error) return { error: error.message }
+
+  revalidatePath('/projects')
+  return { success: true }
+}
