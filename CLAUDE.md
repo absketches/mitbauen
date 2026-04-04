@@ -32,7 +32,9 @@ mitbauen/
 │   │   ├── applications.ts      # applyToRole, respondToApplication
 │   │   ├── comments.ts          # addComment, markCommentsRead
 │   │   ├── messages.ts          # sendMessage, markThreadRead
-│   │   └── projects.ts          # createProject (calls create_project_with_roles RPC)
+│   │   ├── projects.ts          # createProject (calls create_project_with_roles RPC)
+│   │   ├── users.ts             # updateProfile (bio, skills)
+│   │   └── votes.ts             # toggleVote (insert or delete vote row)
 │   ├── auth/
 │   │   └── callback/
 │   │       └── route.ts         # OAuth callback handler
@@ -47,18 +49,23 @@ mitbauen/
 │   │   └── [id]/
 │   │       └── page.tsx         # Project detail: roles, apply, comments, owner panel
 │   └── profile/
-│       └── page.tsx             # User profile (stub — email, bio, skills display)
+│       ├── page.tsx             # Own profile — editable bio/skills, your projects list
+│       └── [id]/
+│           └── page.tsx         # Public profile — view-only bio/skills/projects for any user
 ├── components/
 │   ├── AvatarImage.tsx          # next/image wrapper for user avatars
 │   ├── Navbar.tsx               # Sticky navbar (server component, hidden on /login)
 │   ├── NotificationBell.tsx     # Client component — bell icon + Facebook-style dropdown
 │   ├── UserMenu.tsx             # Avatar dropdown: profile, messages, sign out (client)
+│   ├── profile/
+│   │   └── ProfileEditForm.tsx     # Edit/view toggle for bio + skills on own profile
 │   └── projects/
 │       ├── ApplicationThread.tsx   # Collapsible message thread per application
 │       ├── ApplicationsPanel.tsx   # Owner-only panel: view + accept/reject applications
 │       ├── ApplyModal.tsx          # Bottom-sheet on mobile / dialog on desktop
 │       ├── MarkCommentsRead.tsx    # Invisible client component — marks project comments read on mount
-│       └── ProjectForm.tsx         # Create project form with client-side validation
+│       ├── ProjectForm.tsx         # Create project form with client-side validation
+│       └── VoteButton.tsx          # Vote toggle with optimistic update (client component)
 ├── lib/
 │   ├── supabase.ts              # Browser Supabase client
 │   ├── supabase-server.ts       # Server Supabase client
@@ -68,7 +75,8 @@ mitbauen/
 │       ├── comments.ts          # DAO: createComment
 │       ├── messages.ts          # DAO: getMessages, getReadReceipts, computeUnreadCounts, sendMessage, upsertReadReceipt
 │       ├── notifications.ts     # DAO: getNotifications, getNotificationCount, markProjectCommentsRead
-│       └── projects.ts          # DAO: getProjectFeed, getProjectById, getProjectOwnerId
+│       ├── projects.ts          # DAO: getProjectFeed, getProjectById, getProjectOwnerId
+│       └── users.ts             # DAO: getUserProfile, getProjectsByOwner
 ├── supabase/
 │   └── migrations/              # All DB migrations in order
 ├── __tests__/
@@ -158,9 +166,11 @@ Sign out uses a **Server Action** (`app/actions/auth.ts`). It calls `supabase.au
 
 ### Protected routes (proxy.ts)
 - `/projects/new` — requires auth
-- `/profile` — requires auth
+- `/profile` — requires auth (own profile edit page)
 - `/messages` — requires auth
 - `/login` — redirects to `/projects` if already authenticated
+
+Note: `/profile/[id]` (public profiles) does **not** require auth — only `/profile` exactly is protected.
 
 The proxy also sets an `x-pathname` request header so server components (e.g. Navbar) can conditionally render based on the current route.
 
@@ -223,14 +233,15 @@ npm run test:coverage    # Run with coverage report
 - [x] Comment thread — post, display ordered, scroll container
 - [x] Unread read receipts for both message threads and project comments
 - [x] Sign out (server action, properly clears cookies)
-- [x] Profile page (stub — displays email, bio, skills)
-- [x] Unit + integration tests (141 tests, ~63% coverage)
+- [x] Vote toggle — optimistic VoteButton client component; `toggleVote` server action
+- [x] Application count on feed cards (flat second query to avoid 3-level RLS nesting)
+- [x] Profile page — own profile (`/profile`) with editable bio/skills; public profile (`/profile/[id]`) view-only
+- [x] Clickable owner names, comment authors, and applicant names link to `/profile/[id]`
+- [x] Unit + integration tests (152 tests, ~63% coverage)
 - [x] GitHub Actions CI with type check, tests, coverage, and build smoke test
 
 ## What Needs Building
-- [ ] Vote toggle — upvote/unvote a project
-- [ ] Profile page — full implementation (your projects, your applications; bio/skills need DB columns)
-- [ ] Application count on project cards/detail (show only when > 0)
+- [ ] Edit/delete own project — edit button visible only to the project owner; delete with confirmation
 
 ## Supabase CLI Commands
 ```bash
@@ -255,3 +266,4 @@ supabase login                    # Authenticate CLI
 7. Sign out must use the server action — client-side `supabase.auth.signOut()` does not reliably clear cookies.
 8. `prompt: login` (GitHub) and `prompt: select_account` (Google) in the OAuth calls are intentional — they force the provider to show the account chooser so users can switch accounts.
 9. `revalidatePath('/', 'layout')` must be called from any action that changes notification state (marking reads, accepting/rejecting applications) so the Navbar server component re-renders and the badge count updates. The client component must then call `router.refresh()` to pull the fresh layout.
+10. In server components, you cannot pass event handlers (e.g. `onClick`) as props, and nested `<Link>` elements are invalid HTML. For cards that need both a main navigation link and an inner interactive link (e.g. owner name → profile), use the **stretched-link pattern**: make the card a `div`, put a `<Link className="absolute inset-0">` inside it for the main navigation, and give inner links `relative z-10` so they sit above the stretched link and capture clicks independently.

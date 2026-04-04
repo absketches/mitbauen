@@ -16,6 +16,9 @@ The core mechanic: before anyone can see your idea, you must state what **you** 
 - **Messages inbox** — `/messages` lists all your threads ordered by most recently updated, with deep-links into each thread
 - **Notification bell** — Facebook-style dropdown in the navbar; one item per thread or project comment section; local-timezone timestamps; marks read on click
 - **Comments** — scrollable comment thread on every project page; project owners are notified of new comments from others
+- **Vote toggle** — upvote or un-vote any project; optimistic update with immediate feedback
+- **Application count** — feed cards show applicant count when > 0 as social proof
+- **Profile pages** — own profile (`/profile`) shows your projects and lets you edit bio and skills; public profile (`/profile/[id]`) is view-only; owner names, comment authors, and applicant names are all clickable links to profiles
 - **OAuth sign-in** — sign in with GitHub or Google, both with explicit account selection flows
 
 ---
@@ -127,6 +130,8 @@ app/
     comments.ts       # addComment, markCommentsRead
     messages.ts       # sendMessage, markThreadRead
     projects.ts       # createProject
+    users.ts          # updateProfile (bio, skills)
+    votes.ts          # toggleVote
   auth/callback/      # OAuth callback route
   login/              # Login page (GitHub + Google)
   messages/           # Messages inbox
@@ -134,18 +139,23 @@ app/
     page.tsx          # Browse feed
     new/              # Create project
     [id]/             # Project detail
-  profile/            # User profile
+  profile/
+    page.tsx          # Own profile — editable bio/skills, your projects
+    [id]/             # Public profile — view-only
 components/
   AvatarImage.tsx             # next/image wrapper for avatars
   Navbar.tsx                  # Sticky navbar (hidden on /login)
   NotificationBell.tsx        # Bell icon + notification dropdown
   UserMenu.tsx                # Avatar dropdown (profile, messages, sign out)
+  profile/
+    ProfileEditForm.tsx       # Edit/view toggle for bio + skills
   projects/
     ApplicationThread.tsx     # Collapsible message thread per application
     ApplicationsPanel.tsx     # Owner applications view
     ApplyModal.tsx            # Apply to role modal
     MarkCommentsRead.tsx      # Marks project comments read on mount
     ProjectForm.tsx           # Create form with validation
+    VoteButton.tsx            # Vote toggle with optimistic update
 lib/
   supabase.ts             # Browser client
   supabase-server.ts      # Server client
@@ -156,6 +166,7 @@ lib/
     messages.ts           # Message queries, read receipts, computeUnreadCounts
     notifications.ts      # getNotifications, getNotificationCount, markProjectCommentsRead
     projects.ts           # Project feed and detail queries
+    users.ts              # getUserProfile, getProjectsByOwner
 supabase/migrations/      # Database migrations (applied via supabase db push)
 __tests__/
   helpers/                # TestDatabase + seed helpers
@@ -169,8 +180,3 @@ proxy.ts                  # Route protection (Next.js 16 middleware)
 
 ---
 
-## Remaining features
-
-- [ ] Vote toggle — upvote/unvote a project
-- [ ] Profile page — full implementation (your projects, your applications; bio/skills fields need DB columns added)
-- [ ] Application count on project cards (show when > 0)
