@@ -2,6 +2,15 @@
 
 import { useState } from 'react'
 import { respondToApplication } from '@/app/actions/applications'
+import ApplicationThread from './ApplicationThread'
+
+type Message = {
+  id: string
+  body: string
+  created_at: string
+  sender_id: string
+  users: { name: string | null; avatar_url: string | null } | null
+}
 
 type Application = {
   id: string
@@ -20,16 +29,28 @@ type Role = {
 type Props = {
   roles: Role[]
   projectId: string
+  currentUserId: string
+  threadsData: Record<string, { messages: Message[]; unreadCount: number }>
 }
 
-function ApplicationCard({ app, projectId }: { app: Application; projectId: string }) {
+function ApplicationCard({
+  app,
+  projectId,
+  currentUserId,
+  thread,
+}: {
+  app: Application
+  projectId: string
+  currentUserId: string
+  thread: { messages: Message[]; unreadCount: number }
+}) {
   const [status, setStatus] = useState(app.status)
   const [loading, setLoading] = useState<'accepted' | 'rejected' | null>(null)
 
   async function respond(newStatus: 'accepted' | 'rejected') {
     setLoading(newStatus)
     const result = await respondToApplication(projectId, app.id, newStatus)
-    if (!result?.error) setStatus(newStatus)
+    if (!result || !('error' in result) || !result.error) setStatus(newStatus)
     setLoading(null)
   }
 
@@ -88,11 +109,19 @@ function ApplicationCard({ app, projectId }: { app: Application; projectId: stri
           <p className="text-sm text-gray-700">{app.what_i_bring}</p>
         </div>
       </div>
+
+      <ApplicationThread
+        applicationId={app.id}
+        projectId={projectId}
+        currentUserId={currentUserId}
+        messages={thread.messages}
+        unreadCount={thread.unreadCount}
+      />
     </div>
   )
 }
 
-export default function ApplicationsPanel({ roles, projectId }: Props) {
+export default function ApplicationsPanel({ roles, projectId, currentUserId, threadsData }: Props) {
   const rolesWithApps = roles.filter(r => r.applications.length > 0)
   const totalCount = roles.reduce((sum, r) => sum + r.applications.length, 0)
 
@@ -118,7 +147,13 @@ export default function ApplicationsPanel({ roles, projectId }: Props) {
               </h3>
               <div className="space-y-3">
                 {role.applications.map(app => (
-                  <ApplicationCard key={app.id} app={app} projectId={projectId} />
+                  <ApplicationCard
+                    key={app.id}
+                    app={app}
+                    projectId={projectId}
+                    currentUserId={currentUserId}
+                    thread={threadsData[app.id] ?? { messages: [], unreadCount: 0 }}
+                  />
                 ))}
               </div>
             </div>

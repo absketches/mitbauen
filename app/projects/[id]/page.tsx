@@ -1,69 +1,79 @@
-import { createClient } from '@/lib/supabase-server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase-server'
+import { getProjectById } from '@/lib/db/projects'
+import { getApplicationsByUserForRoles, getApplicationsForRoles } from '@/lib/db/applications'
+import { getMessages, getReadReceipts, computeUnreadCounts } from '@/lib/db/messages'
 import { addComment } from '@/app/actions/comments'
 import ApplyModal from '@/components/projects/ApplyModal'
 import ApplicationsPanel from '@/components/projects/ApplicationsPanel'
+import ApplicationThread from '@/components/projects/ApplicationThread'
+import MarkCommentsRead from '@/components/projects/MarkCommentsRead'
 
 export default async function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const supabase = await createClient()
 
-  const { data: project } = await supabase
-    .from('projects')
-    .select(`
-      *,
-      users (name, avatar_url),
-      roles (id, title, description, skills_needed, status),
-      votes (id),
-      comments (id, body, created_at, users (name, avatar_url))
-    `)
-    .eq('id', id)
-    .single()
+  const supabase = await createClient()
+  const [project, { data: { user } }] = await Promise.all([
+    getProjectById(id),
+    supabase.auth.getUser(),
+  ])
 
   if (!project) notFound()
 
-  const { data: { user } } = await supabase.auth.getUser()
-
-  // Fetch this user's existing applications for roles on this project
-  let appliedRoleIds = new Set<string>()
-  if (user) {
-    const roleIds = (project.roles ?? []).map((r: any) => r.id)
-    const { data: existingApplications } = await supabase
-      .from('applications')
-      .select('role_id')
-      .eq('applicant_id', user.id)
-      .in('role_id', roleIds)
-    appliedRoleIds = new Set((existingApplications ?? []).map((a: any) => a.role_id))
-  }
-
   const isOwner = user?.id === project.owner_id
+  const roleIds = (project.roles ?? []).map((r: any) => r.id)
 
-  // If owner, fetch all applications grouped by role
-  let rolesWithApplications: any[] = []
-  if (isOwner) {
-    const roleIds = (project.roles ?? []).map((r: any) => r.id)
-    const { data: applications } = await supabase
-      .from('applications')
-      .select('id, message, what_i_bring, status, role_id, users (name, avatar_url)')
-      .in('role_id', roleIds)
-      .order('created_at', { ascending: true })
+  // Applicant: own applications for this project's roles
+  const myApplications = user && !isOwner
+    ? await getApplicationsByUserForRoles(user.id, roleIds)
+    : []
 
-    rolesWithApplications = (project.roles ?? []).map((role: any) => ({
-      ...role,
-      applications: (applications ?? []).filter((a: any) => a.role_id === role.id),
-    }))
+  // Owner: all applications grouped by role
+  const allApplications = isOwner ? await getApplicationsForRoles(roleIds) : []
+  const rolesWithApplications = isOwner
+    ? (project.roles ?? []).map((role: any) => ({
+        ...role,
+        applications: allApplications.filter((a: any) => a.role_id === role.id),
+      }))
+    : []
+
+  // Thread data: messages + unread counts for relevant applications
+  const relevantAppIds = isOwner
+    ? allApplications.map((a: any) => a.id)
+    : myApplications.map((a: any) => a.id)
+
+  let threadsData: Record<string, { messages: any[]; unreadCount: number }> = {}
+  if (user && relevantAppIds.length > 0) {
+    const [messages, reads] = await Promise.all([
+      getMessages(relevantAppIds),
+      getReadReceipts(relevantAppIds, user.id),
+    ])
+    const unreadCounts = computeUnreadCounts(messages, reads, user.id, relevantAppIds)
+    // Group messages by application_id
+    const messagesByApp: Record<string, any[]> = {}
+    for (const msg of messages) {
+      if (!messagesByApp[msg.application_id]) messagesByApp[msg.application_id] = []
+      messagesByApp[msg.application_id].push(msg)
+    }
+    for (const appId of relevantAppIds) {
+      threadsData[appId] = {
+        messages: messagesByApp[appId] ?? [],
+        unreadCount: unreadCounts[appId] ?? 0,
+      }
+    }
   }
 
-  const openRoles = project.roles?.filter((r: any) => r.status === 'open') ?? []
+  const roleToApplication = new Map(myApplications.map((a: any) => [a.role_id, a]))
+  const appliedRoleIds = new Set(myApplications.map((a: any) => a.role_id))
+  const openRoles = (project.roles ?? []).filter((r: any) => r.status === 'open')
   const voteCount = project.votes?.length ?? 0
-  const comments = (project.comments ?? []).sort(
+  const comments = [...(project.comments ?? [])].sort(
     (a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
   )
 
   return (
     <div className="max-w-3xl mx-auto py-12 px-4">
-      {/* Back */}
       <Link href="/projects" className="text-sm text-gray-500 hover:text-gray-900 transition-colors mb-8 inline-block">
         ← Back to ideas
       </Link>
@@ -100,7 +110,6 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
         <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">{project.description}</p>
       </section>
 
-      {/* Why it matters */}
       {project.why_it_matters && (
         <section className="mb-8">
           <h2 className="text-lg font-medium text-gray-900 mb-3">Why it matters</h2>
@@ -115,41 +124,64 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
             Open roles <span className="text-gray-400 font-normal text-base">({openRoles.length})</span>
           </h2>
           <div className="space-y-3">
-            {openRoles.map((role: any) => (
-              <div key={role.id} className="border border-gray-200 rounded-xl p-5">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h3 className="font-medium text-gray-900">{role.title}</h3>
-                    {role.description && (
-                      <p className="text-sm text-gray-500 mt-1">{role.description}</p>
-                    )}
-                    {role.skills_needed?.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mt-3">
-                        {role.skills_needed.map((skill: string) => (
-                          <span key={skill} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md">
-                            {skill}
-                          </span>
-                        ))}
-                      </div>
+            {openRoles.map((role: any) => {
+              const myApp = roleToApplication.get(role.id)
+              return (
+                <div key={role.id} className="border border-gray-200 rounded-xl p-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h3 className="font-medium text-gray-900">{role.title}</h3>
+                      {role.description && (
+                        <p className="text-sm text-gray-500 mt-1">{role.description}</p>
+                      )}
+                      {role.skills_needed?.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-3">
+                          {role.skills_needed.map((skill: string) => (
+                            <span key={skill} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md">
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {/* Only show apply button to authenticated non-owners */}
+                    {user && !isOwner && (
+                      <ApplyModal
+                        role={role}
+                        projectId={project.id}
+                        alreadyApplied={appliedRoleIds.has(role.id)}
+                      />
                     )}
                   </div>
-                  {user && (
-                    <ApplyModal
-                      role={role}
+
+                  {/* Message thread for the applicant */}
+                  {myApp && user && (
+                    <ApplicationThread
+                      applicationId={myApp.id}
                       projectId={project.id}
-                      alreadyApplied={appliedRoleIds.has(role.id)}
+                      currentUserId={user.id}
+                      messages={threadsData[myApp.id]?.messages ?? []}
+                      unreadCount={threadsData[myApp.id]?.unreadCount ?? 0}
                     />
                   )}
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </section>
       )}
 
-      {/* Applications — owner only */}
-      {isOwner && (
-        <ApplicationsPanel roles={rolesWithApplications} projectId={project.id} />
+      {/* Mark comments as read when owner visits — clears comment notification count */}
+      {isOwner && user && <MarkCommentsRead projectId={project.id} />}
+
+      {/* Applications panel — owner only */}
+      {isOwner && user && (
+        <ApplicationsPanel
+          roles={rolesWithApplications}
+          projectId={project.id}
+          currentUserId={user.id}
+          threadsData={threadsData}
+        />
       )}
 
       {/* Comments */}
@@ -185,7 +217,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
         )}
 
         {user ? (
-          <form action={addComment.bind(null, project.id)}>
+          <form action={addComment.bind(null, project.id) as (fd: FormData) => void}>
             <textarea
               name="body"
               required

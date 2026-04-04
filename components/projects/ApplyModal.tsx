@@ -30,7 +30,7 @@ export default function ApplyModal({ role, projectId, alreadyApplied }: Props) {
     const formData = new FormData(e.currentTarget)
     const result = await applyToRole(projectId, role.id, formData)
 
-    if (result?.error) {
+    if (result && 'error' in result && result.error) {
       setError(result.error)
       setLoading(false)
     } else {
