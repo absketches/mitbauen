@@ -10,6 +10,8 @@ export async function markCommentsRead(projectId: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return
   await markProjectCommentsRead(projectId, user.id)
+  // Bust the layout cache so the navbar bell re-computes its count
+  revalidatePath('/', 'layout')
 }
 
 export async function addComment(projectId: string, formData: FormData) {

@@ -28,4 +28,6 @@ export async function markThreadRead(applicationId: string) {
   if (!user) return
 
   await upsertReadReceipt(applicationId, user.id)
+  // Bust the layout cache so the navbar bell re-computes its count
+  revalidatePath('/', 'layout')
 }

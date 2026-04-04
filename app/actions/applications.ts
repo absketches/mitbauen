@@ -44,5 +44,7 @@ export async function respondToApplication(
   if (result.error) return result
 
   revalidatePath(`/projects/${projectId}`)
+  // Bust the layout cache: accepting/rejecting changes the pending-applications count
+  revalidatePath('/', 'layout')
   return { success: true }
 }

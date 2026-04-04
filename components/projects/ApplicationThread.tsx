@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { sendMessage, markThreadRead } from '@/app/actions/messages'
 
 type Message = {
@@ -26,6 +27,7 @@ export default function ApplicationThread({
   messages,
   unreadCount,
 }: Props) {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -41,12 +43,12 @@ export default function ApplicationThread({
     }
   }, [applicationId])
 
-  // Mark as read when thread is opened
+  // Mark as read when thread is opened, then refresh so the navbar badge drops
   useEffect(() => {
     if (open && unreadCount > 0) {
-      markThreadRead(applicationId)
+      markThreadRead(applicationId).then(() => router.refresh())
     }
-  }, [open, applicationId, unreadCount])
+  }, [open, applicationId, unreadCount, router])
 
   // Scroll to bottom of messages when opened or new messages arrive
   useEffect(() => {
