@@ -15,7 +15,7 @@ The core mechanic: before anyone can see your idea, you must state what **you** 
 - **Apply to a role** — bottom-sheet modal on mobile, dialog on desktop; duplicate prevention built in
 - **Owner dashboard** — project owners see all applicants per role inline on their project page, with accept/reject
 - **Comments** — scrollable thread on every project page
-- **GitHub OAuth** — sign in with GitHub, forced account picker for multi-account support
+- **OAuth sign-in** — sign in with GitHub or Google, both with explicit account selection flows
 
 ---
 
@@ -26,7 +26,7 @@ The core mechanic: before anyone can see your idea, you must state what **you** 
 | Frontend + API | Next.js 16 (App Router, TypeScript) |
 | Styling | Tailwind CSS v4 |
 | Database | PostgreSQL via Supabase |
-| Auth | Supabase Auth + GitHub OAuth |
+| Auth | Supabase Auth + GitHub / Google OAuth |
 | Deployment | Vercel (app), Supabase (database) |
 | Testing | Vitest, Testing Library |
 | CI | GitHub Actions |
@@ -38,7 +38,7 @@ The core mechanic: before anyone can see your idea, you must state what **you** 
 ### Prerequisites
 - Node.js 20+
 - A [Supabase](https://supabase.com) project
-- A GitHub OAuth App (see below)
+- GitHub and/or Google OAuth configured in Supabase (see below)
 
 ### 1. Clone and install
 
@@ -89,13 +89,15 @@ create trigger on_auth_user_created
   for each row execute procedure public.handle_new_user();
 ```
 
-### 4. GitHub OAuth App
+### 4. OAuth Providers
 
 1. Go to GitHub → Settings → Developer settings → OAuth Apps → New OAuth App
 2. Set **Authorization callback URL** to `https://<your-project-ref>.supabase.co/auth/v1/callback`
 3. Copy the Client ID and Secret into your Supabase project under Authentication → Providers → GitHub
 
 Create two OAuth apps: one for `localhost:3000` (dev) and one for your Vercel URL (prod).
+
+For Google, add a Google OAuth client in Google Cloud Console and copy the Client ID / Secret into Supabase under Authentication → Providers → Google. Use the Supabase callback URL shown in that provider screen.
 
 ### 5. Run locally
 
